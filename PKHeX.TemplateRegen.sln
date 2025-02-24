@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35806.99 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PKHeX.TemplateRegen", "PKHeX.TemplateRegen.csproj", "{214F8A30-93E6-421E-BBAC-99D4DC27D7B3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{214F8A30-93E6-421E-BBAC-99D4DC27D7B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{214F8A30-93E6-421E-BBAC-99D4DC27D7B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{214F8A30-93E6-421E-BBAC-99D4DC27D7B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{214F8A30-93E6-421E-BBAC-99D4DC27D7B3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FE099B4A-2CC4-4E81-B8C0-C113B53828AB}
+	EndGlobalSection
+EndGlobal
