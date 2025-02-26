@@ -1,36 +1,69 @@
-﻿using System.Text.Json;
+using System.Reflection;
+using System.Text.Json;
 using PKHeX.TemplateRegen;
 
 Console.WriteLine("Hello, World!");
 
-var settings = GetSettings();
-if (!Directory.Exists(settings.RepoPathPKHeX))
-{
-	Console.WriteLine("resource path not found");
-	return;
-}
+// Attach Console to NLog's logger - Info
+// Only log the message
+var config = new NLog.Config.LoggingConfiguration();
+var logconsole = new NLog.Targets.ConsoleTarget("logconsole");
+config.AddRule(NLog.LogLevel.Info, NLog.LogLevel.Fatal, logconsole);
+NLog.LogManager.Configuration = config;
 
-var mgdb = new MGDBPickler(settings.RepoPathPKHeX, settings.RepoPathEvGal);
-mgdb.Update();
+if (RunUpdate(Assembly.GetEntryAssembly()!.Location)) 
+    Console.WriteLine("Done!");
 
-Console.WriteLine("Done!");
 Console.ReadKey();
 return;
 
-static ProgramSettings GetSettings()
+bool RunUpdate(string localPath)
 {
-    const string path = "settings.json";
+    var localDir = Path.GetDirectoryName(localPath) ?? string.Empty;
 
-    ProgramSettings result;
-    if (!File.Exists(path))
+    const string jsonName = "settings.json";
+    // Grab the settings from the executable's path
+    // If the settings file does not exist, create it with default values
+    // If the settings file exists, read it and use the values
+
+    var settingsPath = Path.Combine(localDir, jsonName);
+    if (!File.Exists(settingsPath))
     {
-        result = new ProgramSettings();
-        File.WriteAllText(path, JsonSerializer.Serialize(result, ProgramSettingsContext.Default.ProgramSettings));
+        LogUtil.Log($"{jsonName} not found. Creating default.");
+        WriteDefaultSettings(settingsPath);
+        return false;
     }
-    else
+    var text = File.ReadAllText(settingsPath);
+    if (JsonSerializer.Deserialize(text, ProgramSettingsContext.Default.ProgramSettings) is not { } settings)
     {
-        var text = File.ReadAllText(path);
-        result = JsonSerializer.Deserialize(text, ProgramSettingsContext.Default.ProgramSettings) ?? new();
+        LogUtil.Log($"{jsonName} is invalid. Overwriting with default.");
+        WriteDefaultSettings(settingsPath);
+        return false;
     }
-    return result;
+
+    if (!Directory.Exists(settings.PathPKHeX))
+    {
+        LogUtil.Log("resource path not found");
+        return false;
+    }
+
+
+    var mgdb = new MGDBPickler(settings.PathPKHeX, settings.PathRepoEvGal);
+    mgdb.Update();
+
+    var pget = new PGETPickler(settings.PathPKHeX, settings.PathRepoPGET);
+    pget.Update();
+    return true;
+}
+
+static void WriteDefaultSettings(string path)
+{
+    var result = new ProgramSettings();
+    var options = new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
+    var json = JsonSerializer.Serialize(result, options);
+    File.WriteAllText(path, json);
 }

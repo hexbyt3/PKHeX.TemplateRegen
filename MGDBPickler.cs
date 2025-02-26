@@ -1,6 +1,6 @@
-﻿namespace PKHeX.TemplateRegen;
+namespace PKHeX.TemplateRegen;
 
-public class MGDBPickler(string PKHeXRepoPath, string EventGalleryRepoPath)
+public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath)
 {
     private const string LegalityOverrideCards = "PKHeX Legality";
 
@@ -14,7 +14,11 @@ public class MGDBPickler(string PKHeXRepoPath, string EventGalleryRepoPath)
 
     public void Update()
     {
-        var released = Path.Combine(EventGalleryRepoPath, "Released");
+        var repoPath = EventGalleryRepoPath;
+        if (!RepoUpdater.UpdateRepo("EventsGallery", repoPath, "master"))
+            return;
+
+        var released = Path.Combine(repoPath, "Released");
         string _9 = Path.Combine(released, "Gen 9");
         string _8a = Path.Combine(released, "Gen 8");
         string _8b = Path.Combine(released, "Gen 8");
@@ -38,7 +42,7 @@ public class MGDBPickler(string PKHeXRepoPath, string EventGalleryRepoPath)
 
     private void Bin(string path, params string[] type)
     {
-        var dest = Path.Combine(PKHeXRepoPath, "mgdb");
+        var dest = Path.Combine(PKHeXLegality, "mgdb");
         foreach (var z in type)
             BinWrite(dest, path, z);
     }
@@ -46,7 +50,7 @@ public class MGDBPickler(string PKHeXRepoPath, string EventGalleryRepoPath)
     private void BinWrite(string outDir, string path, string ext)
     {
         if (!Directory.Exists(path))
-            Console.WriteLine($"input path not found ({ext})");
+            LogUtil.Log($"input path not found ({ext})");
         else
             BinFiles(path, ext, Path.Combine(outDir, $"{ext}.pkl"));
     }
@@ -73,6 +77,6 @@ public class MGDBPickler(string PKHeXRepoPath, string EventGalleryRepoPath)
             stream.Write(bytes);
             ctr++;
         }
-        Console.WriteLine($"{ext}: {ctr}");
+        LogUtil.Log($"{ext}: {ctr}");
     }
 }
