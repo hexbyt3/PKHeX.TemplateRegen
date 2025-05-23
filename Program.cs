@@ -4,17 +4,15 @@ namespace PKHeX.TemplateRegen;
 
 internal static class Program
 {
+    private static MainForm? _mainForm;
+
     [STAThread]
     static void Main()
     {
-        // Enable visual styles for modern UI
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-
-        // Set high DPI awareness for better display on modern monitors
         Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
-        // Check for single instance
         using var mutex = new Mutex(true, "PKHeX.TemplateRegen.SingleInstance", out bool createdNew);
 
         if (!createdNew)
@@ -24,15 +22,19 @@ internal static class Program
             return;
         }
 
-        // Handle unhandled exceptions
         Application.ThreadException += OnThreadException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
-        // Run the application
-        Application.Run(new MainForm());
-
-        // Cleanup
-        AppLogManager.Dispose();
+        try
+        {
+            _mainForm = new MainForm();
+            Application.Run(_mainForm);
+        }
+        finally
+        {
+            Cleanup();
+        }
     }
 
     private static void OnThreadException(object sender, ThreadExceptionEventArgs e)
@@ -57,6 +59,25 @@ internal static class Program
                 "Critical Error",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
+        }
+    }
+
+    private static void OnProcessExit(object? sender, EventArgs e)
+    {
+        Cleanup();
+    }
+
+    private static void Cleanup()
+    {
+        try
+        {
+            _mainForm?.Dispose();
+            _mainForm = null;
+            AppLogManager.Dispose();
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

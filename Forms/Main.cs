@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using PKHeX.TemplateRegen.Managers;
 
 namespace PKHeX.TemplateRegen.Forms;
 
@@ -87,20 +88,35 @@ public partial class MainForm : Form
 
     private void SetupTrayIcon()
     {
-        _trayIcon = new NotifyIcon
+        try
         {
-            Icon = LoadAppIcon() ?? SystemIcons.Application,
-            Text = "PKHeX Template Regenerator",
-            Visible = true,
-            ContextMenuStrip = CreateTrayMenu()
-        };
+            _trayIcon = new NotifyIcon
+            {
+                Icon = LoadAppIcon() ?? SystemIcons.Application,
+                Text = "PKHeX Template Regenerator",
+                Visible = true,
+                ContextMenuStrip = CreateTrayMenu()
+            };
 
-        _trayIcon.DoubleClick += (s, e) =>
+            _trayIcon.DoubleClick += (s, e) =>
+            {
+                try
+                {
+                    Show();
+                    WindowState = FormWindowState.Normal;
+                    BringToFront();
+                }
+                catch (Exception ex)
+                {
+                    AppLogManager.LogError("Error showing form from tray", ex);
+                }
+            };
+        }
+        catch (Exception ex)
         {
-            Show();
-            WindowState = FormWindowState.Normal;
-            BringToFront();
-        };
+            AppLogManager.LogError("Error setting up tray icon", ex);
+            _trayIcon = null;
+        }
     }
 
     private ContextMenuStrip CreateTrayMenu()
@@ -174,6 +190,12 @@ public partial class MainForm : Form
 
     private void OnUpdateWorkerProgressChanged(object? sender, ProgressChangedEventArgs e)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(new Action(() => OnUpdateWorkerProgressChanged(sender, e)));
+            return;
+        }
+
         _progressBar.Style = ProgressBarStyle.Continuous;
         _progressBar.Value = e.ProgressPercentage;
         _statusLabel.Text = e.UserState?.ToString() ?? "Processing...";
@@ -181,6 +203,12 @@ public partial class MainForm : Form
 
     private void OnUpdateWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(new Action(() => OnUpdateWorkerCompleted(sender, e)));
+            return;
+        }
+
         _updateButton.Enabled = true;
         _progressBar.Style = ProgressBarStyle.Continuous;
 
@@ -193,7 +221,7 @@ public partial class MainForm : Form
                 _lastUpdateTime = DateTime.Now;
                 UpdateLastUpdateLabel();
 
-                _trayIcon?.ShowBalloonTip(3000, "Update Complete",
+                ShowBalloonTip(3000, "Update Complete",
                     "Templates regenerated successfully!", ToolTipIcon.Info);
             }
             else
@@ -254,6 +282,12 @@ public partial class MainForm : Form
 
     private void UpdatePathLabels()
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(new Action(UpdatePathLabels));
+            return;
+        }
+
         _pkHexPathLabel.Text = Directory.Exists(_settings.PathPKHeX)
             ? $"✓ {_settings.PathPKHeX}"
             : $"✗ {_settings.PathPKHeX} (Not Found)";
@@ -276,6 +310,12 @@ public partial class MainForm : Form
 
     private void UpdateLastUpdateLabel()
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(new Action(UpdateLastUpdateLabel));
+            return;
+        }
+
         if (_lastUpdateTime != DateTime.MinValue)
         {
             var elapsed = DateTime.Now - _lastUpdateTime;
@@ -309,7 +349,17 @@ public partial class MainForm : Form
             var hoursSinceUpdate = (DateTime.Now - _lastUpdateTime).TotalHours;
             if (hoursSinceUpdate >= (double)_autoUpdateInterval.Value)
             {
-                Task.Run(async () => await PerformUpdate());
+                Task.Run(async () =>
+                {
+                    if (InvokeRequired)
+                    {
+                        BeginInvoke(new Action(async () => await PerformUpdate()));
+                    }
+                    else
+                    {
+                        await PerformUpdate();
+                    }
+                });
             }
         }
     }
@@ -326,7 +376,8 @@ public partial class MainForm : Form
         {
             e.Cancel = true;
             Hide();
-            _trayIcon?.ShowBalloonTip(2000, "Minimized to Tray",
+
+            ShowBalloonTip(2000, "Minimized to Tray",
                 "Application is still running in the background.", ToolTipIcon.Info);
         }
     }
@@ -343,6 +394,49 @@ public partial class MainForm : Form
         {
             return null;
         }
+    }
+
+    private void ShowBalloonTip(int timeout, string title, string text, ToolTipIcon icon)
+    {
+        try
+        {
+            _trayIcon?.ShowBalloonTip(timeout, title, text, icon);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Tray icon was disposed, ignore
+        }
+        catch (Exception ex)
+        {
+            AppLogManager.LogDebug($"Error showing balloon tip: {ex.Message}");
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // Dispose NotifyIcon first and hide it to prevent lingering in system tray
+            try
+            {
+                if (_trayIcon != null)
+                {
+                    _trayIcon.Visible = false;
+                    _trayIcon.Dispose();
+                    _trayIcon = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogManager.LogError("Error disposing tray icon", ex);
+            }
+
+            _updateWorker?.Dispose();
+            _statusTimer?.Stop();
+            _statusTimer?.Dispose();
+            components?.Dispose();
+        }
+        base.Dispose(disposing);
     }
 }
 

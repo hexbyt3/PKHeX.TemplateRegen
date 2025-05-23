@@ -5,7 +5,7 @@ using NLog.Targets;
 
 namespace PKHeX.TemplateRegen;
 
-public static class AppLogManager  // Renamed to avoid conflict with NLog.LogManager
+public static class AppLogManager
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private static RichTextBox? _logTextBox;
@@ -17,17 +17,14 @@ public static class AppLogManager  // Renamed to avoid conflict with NLog.LogMan
     {
         _logTextBox = logTextBox;
 
-        // Configure NLog
         var config = new LoggingConfiguration();
 
-        // Console target
         var consoleTarget = new ConsoleTarget("console")
         {
             Layout = "${longdate} ${level:uppercase=true} ${message}"
         };
         config.AddRule(LogLevel.Debug, LogLevel.Fatal, consoleTarget);
 
-        // File target
         var fileTarget = new FileTarget("file")
         {
             FileName = "${basedir}/logs/${shortdate}.log",
@@ -38,16 +35,14 @@ public static class AppLogManager  // Renamed to avoid conflict with NLog.LogMan
         };
         config.AddRule(LogLevel.Debug, LogLevel.Fatal, fileTarget);
 
-        // Custom target for UI
         var uiTarget = new CustomUITarget("ui");
         config.AddRule(LogLevel.Info, LogLevel.Fatal, uiTarget);
 
         LogManager.Configuration = config;
 
-        // Setup timer for UI updates
         _logTimer = new System.Windows.Forms.Timer
         {
-            Interval = 100 // Update UI every 100ms
+            Interval = 100
         };
         _logTimer.Tick += OnLogTimerTick;
         _logTimer.Start();
@@ -141,76 +136,93 @@ public static class AppLogManager  // Renamed to avoid conflict with NLog.LogMan
             PendingLogs.Clear();
         }
 
-        if (_logTextBox.InvokeRequired)
+        try
         {
-            _logTextBox.BeginInvoke(new Action(() => ProcessLogs(logsToProcess)));
+            if (_logTextBox.InvokeRequired)
+            {
+                _logTextBox.BeginInvoke(new Action(() => ProcessLogsInternal(logsToProcess)));
+            }
+            else
+            {
+                ProcessLogsInternal(logsToProcess);
+            }
         }
-        else
+        catch (ObjectDisposedException)
         {
-            ProcessLogs(logsToProcess);
+            // The form or control was disposed, stop logging to UI
+            _logTextBox = null;
+        }
+        catch (Exception ex)
+        {
+            // Log to file only to avoid infinite loop
+            Logger.Error(ex, "Error updating log UI");
         }
     }
 
-    private static void ProcessLogs(List<LogEntry> logs)
+    private static void ProcessLogsInternal(List<LogEntry> logs)
     {
         if (_logTextBox == null || _logTextBox.IsDisposed)
             return;
 
-        _logTextBox.SuspendLayout();
-
-        foreach (var log in logs)
+        try
         {
-            var timestamp = log.Timestamp.ToString("HH:mm:ss");
-            var levelText = GetLevelText(log.Level);
-            var color = GetLevelColor(log.Level);
+            _logTextBox.SuspendLayout();
 
-            // Add timestamp
-            _logTextBox.SelectionStart = _logTextBox.TextLength;
-            _logTextBox.SelectionLength = 0;
-            _logTextBox.SelectionColor = Color.Gray;
-            _logTextBox.AppendText($"[{timestamp}] ");
-
-            // Add level
-            _logTextBox.SelectionStart = _logTextBox.TextLength;
-            _logTextBox.SelectionLength = 0;
-            _logTextBox.SelectionColor = color;
-            _logTextBox.AppendText($"[{levelText}] ");
-
-            // Add message
-            _logTextBox.SelectionStart = _logTextBox.TextLength;
-            _logTextBox.SelectionLength = 0;
-            _logTextBox.SelectionColor = Color.White;
-            _logTextBox.AppendText($"{log.Message}\n");
-
-            // Add exception details if present
-            if (log.Exception != null)
+            foreach (var log in logs)
             {
+                var timestamp = log.Timestamp.ToString("HH:mm:ss");
+                var levelText = GetLevelText(log.Level);
+                var color = GetLevelColor(log.Level);
+
                 _logTextBox.SelectionStart = _logTextBox.TextLength;
                 _logTextBox.SelectionLength = 0;
-                _logTextBox.SelectionColor = Color.OrangeRed;
-                _logTextBox.AppendText($"  Exception: {log.Exception.Message}\n");
+                _logTextBox.SelectionColor = Color.Gray;
+                _logTextBox.AppendText($"[{timestamp}] ");
 
-                if (!string.IsNullOrEmpty(log.Exception.StackTrace))
+                _logTextBox.SelectionStart = _logTextBox.TextLength;
+                _logTextBox.SelectionLength = 0;
+                _logTextBox.SelectionColor = color;
+                _logTextBox.AppendText($"[{levelText}] ");
+
+                _logTextBox.SelectionStart = _logTextBox.TextLength;
+                _logTextBox.SelectionLength = 0;
+                _logTextBox.SelectionColor = Color.White;
+                _logTextBox.AppendText($"{log.Message}\n");
+
+                if (log.Exception != null)
                 {
                     _logTextBox.SelectionStart = _logTextBox.TextLength;
                     _logTextBox.SelectionLength = 0;
-                    _logTextBox.SelectionColor = Color.DarkOrange;
-                    _logTextBox.AppendText($"  Stack: {log.Exception.StackTrace}\n");
+                    _logTextBox.SelectionColor = Color.OrangeRed;
+                    _logTextBox.AppendText($"  Exception: {log.Exception.Message}\n");
+
+                    if (!string.IsNullOrEmpty(log.Exception.StackTrace))
+                    {
+                        _logTextBox.SelectionStart = _logTextBox.TextLength;
+                        _logTextBox.SelectionLength = 0;
+                        _logTextBox.SelectionColor = Color.DarkOrange;
+                        var stackTrace = log.Exception.StackTrace.Split('\n').FirstOrDefault() ?? "";
+                        _logTextBox.AppendText($"  Stack: {stackTrace}\n");
+                    }
                 }
             }
+
+            _logTextBox.SelectionStart = _logTextBox.TextLength;
+            _logTextBox.ScrollToCaret();
+
+            if (_logTextBox.Lines.Length > 1000)
+            {
+                var lines = _logTextBox.Lines.Skip(_logTextBox.Lines.Length - 800).ToArray();
+                _logTextBox.Lines = lines;
+            }
         }
-
-        // Auto-scroll to bottom
-        _logTextBox.SelectionStart = _logTextBox.TextLength;
-        _logTextBox.ScrollToCaret();
-
-        _logTextBox.ResumeLayout();
-
-        // Limit log size
-        if (_logTextBox.Lines.Length > 1000)
+        finally
         {
-            var lines = _logTextBox.Lines.Skip(_logTextBox.Lines.Length - 800).ToArray();
-            _logTextBox.Lines = lines;
+            try
+            {
+                _logTextBox.ResumeLayout();
+            }
+            catch { }
         }
     }
 
@@ -237,13 +249,27 @@ public static class AppLogManager  // Renamed to avoid conflict with NLog.LogMan
             PendingLogs.Clear();
         }
 
-        if (_logTextBox?.InvokeRequired == true)
+        if (_logTextBox == null || _logTextBox.IsDisposed)
+            return;
+
+        try
         {
-            _logTextBox.BeginInvoke(new Action(() => _logTextBox.Clear()));
+            if (_logTextBox.InvokeRequired)
+            {
+                _logTextBox.BeginInvoke(new Action(() =>
+                {
+                    if (_logTextBox != null && !_logTextBox.IsDisposed)
+                        _logTextBox.Clear();
+                }));
+            }
+            else
+            {
+                _logTextBox.Clear();
+            }
         }
-        else
+        catch (ObjectDisposedException)
         {
-            _logTextBox?.Clear();
+            _logTextBox = null;
         }
     }
 
@@ -272,17 +298,24 @@ public static class AppLogManager  // Renamed to avoid conflict with NLog.LogMan
 
         protected override void Write(LogEventInfo logEvent)
         {
-            var message = RenderLogEvent(Layout, logEvent);
-
-            lock (LogLock)
+            try
             {
-                PendingLogs.Enqueue(new LogEntry
+                var message = RenderLogEvent(Layout, logEvent);
+
+                lock (LogLock)
                 {
-                    Timestamp = logEvent.TimeStamp,
-                    Level = logEvent.Level,
-                    Message = message,
-                    Exception = logEvent.Exception
-                });
+                    PendingLogs.Enqueue(new LogEntry
+                    {
+                        Timestamp = logEvent.TimeStamp,
+                        Level = logEvent.Level,
+                        Message = message,
+                        Exception = logEvent.Exception
+                    });
+                }
+            }
+            catch
+            {
+                // Ignore logging errors to prevent infinite loops
             }
         }
     }

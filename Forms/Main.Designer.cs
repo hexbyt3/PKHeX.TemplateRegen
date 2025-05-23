@@ -7,44 +7,19 @@ namespace PKHeX.TemplateRegen.Forms;
 
 partial class MainForm
 {
-    /// <summary>
-    /// Required designer variable.
-    /// </summary>
     private System.ComponentModel.IContainer components = null;
-
-    /// <summary>
-    /// Clean up any resources being used.
-    /// </summary>
-    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            components?.Dispose();
-            _trayIcon?.Dispose();
-            _updateWorker?.Dispose();
-            _statusTimer?.Dispose();
-        }
-        base.Dispose(disposing);
-    }
 
     #region Windows Form Designer generated code
 
-    /// <summary>
-    /// Required method for Designer support - do not modify
-    /// the contents of this method with the code editor.
-    /// </summary>
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
 
-        // Form properties
         Text = "PKHeX Template Regenerator";
         Size = new Size(900, 700);
         StartPosition = FormStartPosition.CenterScreen;
         Icon = LoadAppIcon();
 
-        // Main layout
         _mainLayout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -52,12 +27,11 @@ partial class MainForm
             RowCount = 4,
             Padding = new Padding(10)
         };
-        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150)); // Info panel
-        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100)); // Control panel
-        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Log area
-        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));  // Status bar
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
 
-        // Info Panel
         _infoPanel = new Panel
         {
             Dock = DockStyle.Fill,
@@ -97,7 +71,6 @@ partial class MainForm
 
         _infoPanel.Controls.Add(infoLayout);
 
-        // Control Panel
         var controlPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -162,7 +135,6 @@ partial class MainForm
             _autoUpdateCheckBox, _autoUpdateInterval, hoursLabel, _lastUpdateLabel
         });
 
-        // Log Area
         var logPanel = new Panel
         {
             Dock = DockStyle.Fill,
@@ -179,7 +151,6 @@ partial class MainForm
 
         logPanel.Controls.Add(_logTextBox);
 
-        // Status Bar
         var statusPanel = new Panel
         {
             Dock = DockStyle.Fill,
@@ -204,7 +175,6 @@ partial class MainForm
         statusPanel.Controls.Add(_statusLabel);
         statusPanel.Controls.Add(_progressBar);
 
-        // Add all to main layout
         _mainLayout.Controls.Add(_infoPanel, 0, 0);
         _mainLayout.Controls.Add(controlPanel, 0, 1);
         _mainLayout.Controls.Add(logPanel, 0, 2);
@@ -212,14 +182,16 @@ partial class MainForm
 
         Controls.Add(_mainLayout);
 
-        // Initialize workers and timers
-        _updateWorker = new BackgroundWorker { WorkerReportsProgress = true };
+        _updateWorker = new BackgroundWorker
+        {
+            WorkerReportsProgress = true,
+            WorkerSupportsCancellation = true
+        };
         _statusTimer = new System.Windows.Forms.Timer(components) { Interval = 1000 };
     }
 
     #endregion
 
-    // Control declarations
     private BackgroundWorker _updateWorker;
     private System.Windows.Forms.Timer _statusTimer;
     private NotifyIcon? _trayIcon;

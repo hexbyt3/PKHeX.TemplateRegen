@@ -18,7 +18,6 @@ public static class RepoUpdater
 
             using var localRepo = new Repository(path);
 
-            // Check current status
             var status = localRepo.RetrieveStatus();
             if (status.IsDirty)
             {
@@ -32,23 +31,34 @@ public static class RepoUpdater
                 return false;
             }
 
-            // Configure fetch options with progress reporting
             var fetchOptions = new FetchOptions
             {
                 OnProgress = (output) =>
                 {
-                    AppLogManager.LogDebug($"{repo}: {output}");
+                    try
+                    {
+                        AppLogManager.LogDebug($"{repo}: {output}");
+                    }
+                    catch { }
                     return true;
                 },
                 OnTransferProgress = (progress) =>
                 {
-                    var percent = (progress.ReceivedObjects * 100) / Math.Max(progress.TotalObjects, 1);
-                    AppLogManager.LogDebug($"{repo}: Fetching... {percent}% ({progress.ReceivedObjects}/{progress.TotalObjects} objects)");
+                    try
+                    {
+                        var percent = (progress.ReceivedObjects * 100) / Math.Max(progress.TotalObjects, 1);
+                        AppLogManager.LogDebug($"{repo}: Fetching... {percent}% ({progress.ReceivedObjects}/{progress.TotalObjects} objects)");
+                    }
+                    catch { }
                     return true;
                 },
                 OnUpdateTips = (refName, oldId, newId) =>
                 {
-                    AppLogManager.LogDebug($"{repo}: Updated {refName}");
+                    try
+                    {
+                        AppLogManager.LogDebug($"{repo}: Updated {refName}");
+                    }
+                    catch { }
                     return true;
                 },
                 CredentialsProvider = CredentialsHandler
@@ -59,7 +69,6 @@ public static class RepoUpdater
             var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
             Commands.Fetch(localRepo, remote.Name, refSpecs, fetchOptions, "Fetching latest changes");
 
-            // Check if we need to update
             var branches = localRepo.Branches;
             var localBranch = branches[branch];
             var remoteBranch = branches[$"origin/{branch}"];
@@ -76,7 +85,6 @@ public static class RepoUpdater
                 return false;
             }
 
-            // Compare commits
             var localCommit = localBranch.Tip;
             var remoteCommit = remoteBranch.Tip;
 
@@ -86,11 +94,9 @@ public static class RepoUpdater
                 return true;
             }
 
-            // Count commits behind
             var divergence = localRepo.ObjectDatabase.CalculateHistoryDivergence(localCommit, remoteCommit);
             AppLogManager.Log($"{repo} is {divergence.BehindBy} commits behind origin/{branch}");
 
-            // Perform the update
             AppLogManager.Log($"Updating {repo} to latest commit...");
 
             var checkoutOptions = new CheckoutOptions
@@ -98,8 +104,15 @@ public static class RepoUpdater
                 CheckoutModifiers = CheckoutModifiers.Force,
                 OnCheckoutProgress = (path, completedSteps, totalSteps) =>
                 {
-                    var percent = (completedSteps * 100) / Math.Max(totalSteps, 1);
-                    AppLogManager.LogDebug($"{repo}: Checking out files... {percent}%");
+                    try
+                    {
+                        var percent = (completedSteps * 100) / Math.Max(totalSteps, 1);
+                        if (percent % 10 == 0) // Only log every 10%
+                        {
+                            AppLogManager.LogDebug($"{repo}: Checking out files... {percent}%");
+                        }
+                    }
+                    catch { }
                 }
             };
 
@@ -125,8 +138,6 @@ public static class RepoUpdater
 
     private static Credentials CredentialsHandler(string url, string usernameFromUrl, SupportedCredentialTypes types)
     {
-        // For public repositories, we don't need credentials
-        // If needed in the future, this can be extended to support authentication
         return new DefaultCredentials();
     }
 
