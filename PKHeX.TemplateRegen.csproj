@@ -11,6 +11,24 @@
     <RootNamespace>PKHeX.TemplateRegen</RootNamespace>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <LangVersion>13</LangVersion>
+
+    <!-- Single file publish settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Assembly info -->
+    <AssemblyTitle>PKHeX Template Regenerator</AssemblyTitle>
+    <AssemblyDescription>Automatically updates PKHeX legality templates from EventsGallery and PoGoEncTool</AssemblyDescription>
+    <AssemblyConfiguration>Release</AssemblyConfiguration>
+    <AssemblyCompany>PKHeX Community</AssemblyCompany>
+    <AssemblyProduct>PKHeX Template Regenerator</AssemblyProduct>
+    <AssemblyCopyright>Copyright © 2024</AssemblyCopyright>
+    <AssemblyVersion>2.0.1.0</AssemblyVersion>
+    <FileVersion>2.0.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +41,10 @@
     <None Remove="Resources\app.ico" />
     <EmbeddedResource Include="Resources\app.ico" />
   </ItemGroup>
+
+  <!-- Additional runtime identifiers for cross-platform publishing -->
+  <PropertyGroup>
+    <RuntimeIdentifiers>win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
 
 </Project>
