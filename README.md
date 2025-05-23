@@ -1,6 +1,7 @@
 # PKHeX Template Regenerator
 
 Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by automatically pulling the latest data from EventsGallery and PoGoEncTool. No more manual copying or wondering if you have the latest events!
+![image](https://github.com/user-attachments/assets/d2f553c1-7308-4070-884d-34656f4b4073)
 
 ![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.0.1-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
