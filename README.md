@@ -3,7 +3,7 @@
 Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by automatically pulling the latest data from EventsGallery and PoGoEncTool. No more manual copying or wondering if you have the latest events!
 ![image](https://github.com/user-attachments/assets/d2f553c1-7308-4070-884d-34656f4b4073)
 
-![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.0.1-blue.svg)
+![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.0.2-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)
 
@@ -170,7 +170,12 @@ GPL v3 - Which basically means: use it, share it, improve it, but keep it open s
 
 ## What's New?
 
-### v2.0.1 (Latest) 
+### v2.0.2 (Latest)
+- Reorganized files into new "Core" folder
+- Fetch data directly from PGET directly to ensure data.json is always up to date.
+- Remove unused methods
+
+### v2.0.1
 - Fixed those annoying repository detection errors
 - Added the super helpful diagnostics tool
 - Better error messages that actually tell you what's wrong
