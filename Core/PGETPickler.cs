@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace PKHeX.TemplateRegen;
+namespace PKHeX.TemplateRegen.Core;
 
 public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
 {
@@ -55,9 +55,7 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
                                        .Take(5)
                                        .Select(Path.GetFileName);
                 if (dllFiles.Any())
-                {
                     AppLogManager.LogDebug($"Found DLL files but no EXE: {string.Join(", ", dllFiles)}");
-                }
                 return;
             }
         }
@@ -184,9 +182,7 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
 
         var exitCode = process.ExitCode;
         if (exitCode != 0)
-        {
             AppLogManager.LogWarning($"PGET exited with code {exitCode}, but continuing to check for generated files...");
-        }
 
         // Get all the created .pkl files then copy them to the destination folder
         // This matches the original behavior - search ALL subdirectories from the exe location
@@ -247,9 +243,7 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
                 ctr++;
 
                 if (expectedFiles.Any(ef => filename.Contains(ef) || ef.Contains(filename)))
-                {
                     foundExpected.Add(filename);
-                }
             }
             catch (Exception ex)
             {
@@ -271,15 +265,11 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
             AppLogManager.Log($"Successfully copied {ctr} pickle files to {dest}");
 
             if (foundExpected.Count > 0)
-            {
                 AppLogManager.Log($"Found expected files: {string.Join(", ", foundExpected)}");
-            }
 
             var missingExpected = expectedFiles.Where(ef => !foundExpected.Any(fe => fe.Contains(ef) || ef.Contains(fe))).ToList();
             if (missingExpected.Any())
-            {
                 AppLogManager.LogWarning($"Missing expected files: {string.Join(", ", missingExpected)}");
-            }
         }
     }
 }

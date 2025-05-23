@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Timer = System.Windows.Forms.Timer;
 
 namespace PKHeX.TemplateRegen;
 
@@ -11,7 +12,7 @@ public static class AppLogManager
     private static RichTextBox? _logTextBox;
     private static readonly object LogLock = new();
     private static readonly Queue<LogEntry> PendingLogs = new();
-    private static System.Windows.Forms.Timer? _logTimer;
+    private static Timer? _logTimer;
 
     public static void Initialize(RichTextBox logTextBox)
     {
@@ -40,7 +41,7 @@ public static class AppLogManager
 
         LogManager.Configuration = config;
 
-        _logTimer = new System.Windows.Forms.Timer
+        _logTimer = new Timer
         {
             Interval = 100
         };

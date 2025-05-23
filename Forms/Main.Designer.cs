@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
+using Timer = System.Windows.Forms.Timer;
 
 namespace PKHeX.TemplateRegen.Forms;
 
@@ -187,13 +188,13 @@ partial class MainForm
             WorkerReportsProgress = true,
             WorkerSupportsCancellation = true
         };
-        _statusTimer = new System.Windows.Forms.Timer(components) { Interval = 1000 };
+        _statusTimer = new Timer(components) { Interval = 1000 };
     }
 
     #endregion
 
     private BackgroundWorker _updateWorker;
-    private System.Windows.Forms.Timer _statusTimer;
+    private Timer _statusTimer;
     private NotifyIcon? _trayIcon;
     private RichTextBox _logTextBox;
     private ProgressBar _progressBar;

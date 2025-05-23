@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using PKHeX.TemplateRegen.Managers;
+using PKHeX.TemplateRegen.Core;
 
 namespace PKHeX.TemplateRegen.Forms;
 
@@ -34,7 +35,7 @@ public partial class MainForm : Form
 
         void ApplyThemeToControl(Control control)
         {
-            if (control is System.Windows.Forms.Button btn)
+            if (control is Button btn)
             {
                 btn.BackColor = darkControl;
                 btn.ForeColor = lightText;
@@ -43,7 +44,7 @@ public partial class MainForm : Form
                 btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(62, 62, 66);
                 btn.FlatAppearance.MouseDownBackColor = accentColor;
             }
-            else if (control is System.Windows.Forms.TextBox || control is RichTextBox || control is NumericUpDown)
+            else if (control is TextBox || control is RichTextBox || control is NumericUpDown)
             {
                 control.BackColor = darkControl;
                 control.ForeColor = lightText;
@@ -57,7 +58,7 @@ public partial class MainForm : Form
             {
                 control.ForeColor = lightText;
             }
-            else if (control is System.Windows.Forms.ProgressBar pb)
+            else if (control is ProgressBar pb)
             {
                 pb.BackColor = darkControl;
             }

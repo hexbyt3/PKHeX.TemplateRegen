@@ -1,4 +1,4 @@
-namespace PKHeX.TemplateRegen;
+namespace PKHeX.TemplateRegen.Core;
 
 public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath)
 {
@@ -49,7 +49,7 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath)
         foreach (var (genName, pathAndTypes) in generations)
         {
             currentGen++;
-            var progress = (currentGen * 100) / totalGens;
+            var progress = currentGen * 100 / totalGens;
 
             AppLogManager.Log($"Processing {genName} ({currentGen}/{totalGens})...");
 
@@ -152,9 +152,7 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath)
 
                 // Log progress every 100 files
                 if (processed % 100 == 0)
-                {
                     AppLogManager.LogDebug($"{ext}: Processed {processed}/{files.Count} files");
-                }
             }
             catch (Exception ex)
             {

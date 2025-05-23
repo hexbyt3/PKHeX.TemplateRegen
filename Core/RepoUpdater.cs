@@ -1,6 +1,6 @@
 using LibGit2Sharp;
 
-namespace PKHeX.TemplateRegen;
+namespace PKHeX.TemplateRegen.Core;
 
 public static class RepoUpdater
 {
@@ -20,9 +20,7 @@ public static class RepoUpdater
 
             var status = localRepo.RetrieveStatus();
             if (status.IsDirty)
-            {
                 AppLogManager.LogWarning($"Repository {repo} has uncommitted changes. Proceeding with caution.");
-            }
 
             var remote = localRepo.Network.Remotes["origin"];
             if (remote == null)
@@ -46,7 +44,7 @@ public static class RepoUpdater
                 {
                     try
                     {
-                        var percent = (progress.ReceivedObjects * 100) / Math.Max(progress.TotalObjects, 1);
+                        var percent = progress.ReceivedObjects * 100 / Math.Max(progress.TotalObjects, 1);
                         AppLogManager.LogDebug($"{repo}: Fetching... {percent}% ({progress.ReceivedObjects}/{progress.TotalObjects} objects)");
                     }
                     catch { }
@@ -106,11 +104,9 @@ public static class RepoUpdater
                 {
                     try
                     {
-                        var percent = (completedSteps * 100) / Math.Max(totalSteps, 1);
+                        var percent = completedSteps * 100 / Math.Max(totalSteps, 1);
                         if (percent % 10 == 0) // Only log every 10%
-                        {
                             AppLogManager.LogDebug($"{repo}: Checking out files... {percent}%");
-                        }
                     }
                     catch { }
                 }
@@ -139,58 +135,5 @@ public static class RepoUpdater
     private static Credentials CredentialsHandler(string url, string usernameFromUrl, SupportedCredentialTypes types)
     {
         return new DefaultCredentials();
-    }
-
-    public static bool IsRepositoryUpToDate(string repo, string path, string branch)
-    {
-        try
-        {
-            if (!Repository.IsValid(path))
-                return false;
-
-            using var localRepo = new Repository(path);
-
-            var localBranch = localRepo.Branches[branch];
-            var remoteBranch = localRepo.Branches[$"origin/{branch}"];
-
-            if (localBranch == null || remoteBranch == null)
-                return false;
-
-            return localBranch.Tip.Sha == remoteBranch.Tip.Sha;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public static (bool needsUpdate, string info) CheckRepositoryStatus(string repo, string path, string branch)
-    {
-        try
-        {
-            if (!Repository.IsValid(path))
-                return (true, "Invalid repository");
-
-            using var localRepo = new Repository(path);
-
-            var localBranch = localRepo.Branches[branch];
-            var remoteBranch = localRepo.Branches[$"origin/{branch}"];
-
-            if (localBranch == null)
-                return (true, $"Local branch '{branch}' not found");
-
-            if (remoteBranch == null)
-                return (true, $"Remote branch 'origin/{branch}' not found");
-
-            if (localBranch.Tip.Sha == remoteBranch.Tip.Sha)
-                return (false, "Up to date");
-
-            var divergence = localRepo.ObjectDatabase.CalculateHistoryDivergence(localBranch.Tip, remoteBranch.Tip);
-            return (true, $"{divergence.BehindBy} commits behind");
-        }
-        catch (Exception ex)
-        {
-            return (true, $"Error: {ex.Message}");
-        }
     }
 }

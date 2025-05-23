@@ -1,6 +1,6 @@
 using LibGit2Sharp;
 
-namespace PKHeX.TemplateRegen;
+namespace PKHeX.TemplateRegen.Core;
 
 public class RepositoryDetector
 {
@@ -44,9 +44,7 @@ public class RepositoryDetector
         {
             var drivePath = drive.RootDirectory.FullName;
             if (!_commonPaths.Contains(drivePath))
-            {
                 searchTasks.Add(Task.Run(() => SearchDriveRoot(drivePath)));
-            }
         }
 
         var allResults = await Task.WhenAll(searchTasks);
@@ -173,9 +171,7 @@ public class RepositoryDetector
         {
             var fullPath = Path.Combine(path, identifier.Replace('/', Path.DirectorySeparatorChar));
             if (File.Exists(fullPath) || Directory.Exists(fullPath))
-            {
                 matchCount++;
-            }
         }
 
         // Require at least half of the identifiers to match
