@@ -54,7 +54,7 @@ Something not working? Hit the diagnostics button and get a full report of what'
 
 ### Installation
 
-1. Grab the latest release from the [Releases](https://github.com/yourusername/PKHeX.TemplateRegen/releases) page
+1. Grab the latest release from the [Releases](https://github.com/bdawg1989/PKHeX.TemplateRegen/releases) page
 2. Unzip it somewhere convenient
 3. Double-click `PKHeX.TemplateRegen.exe`
 4. That's it! No installer needed 🚀
