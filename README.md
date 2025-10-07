@@ -6,7 +6,7 @@
 Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by automatically pulling the latest data from EventsGallery and PoGoEncTool. No more manual copying or wondering if you have the latest events!
 ![image](https://github.com/user-attachments/assets/d2f553c1-7308-4070-884d-34656f4b4073)
 
-![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.0.2-blue.svg)
+![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.0.3-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)
 
@@ -43,17 +43,26 @@ Because we've all been there - something updates and suddenly nothing works. Thi
 ### 🏥 **Built-in Diagnostics**
 Something not working? Hit the diagnostics button and get a full report of what's going on. Super helpful when asking for help!
 
+### 🤖 **Automatic PoGoEncTool Management** (NEW!)
+No need to manually clone or maintain PoGoEncTool anymore! The app now:
+- Automatically clones the official PoGoEncTool repository if missing
+- Updates to the latest commits from the official repo
+- Builds the executable automatically when updates are available
+- Skips unnecessary rebuilds when everything's up-to-date
+- Shows commit hash and messages so you know exactly what version you're using
+
 ## Getting Started
 
 ### What You'll Need
 
 - **Windows 10 or 11** (sorry Mac/Linux folks!)
-- **[.NET 9.0 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)** - You probably already have this
+- **[.NET 9.0 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)** - For running the app
+- **[.NET SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** - Only needed if using auto-build for PoGoEncTool (recommended!)
 - **Git** - If you've cloned repos, you're good
 - The following repos cloned somewhere on your system:
   - [PKHeX-ALL-IN-ONE](https://github.com/bdawg1989/PKHeX-ALL-IN-ONE)
   - [EventsGallery](https://github.com/projectpokemon/EventsGallery)
-  - [PoGoEncTool](https://github.com/projectpokemon/PoGoEncTool)
+  - ~~[PoGoEncTool](https://github.com/projectpokemon/PoGoEncTool)~~ - **Optional!** The app auto-manages this now
 
 ### Installation
 
@@ -67,17 +76,20 @@ Something not working? Hit the diagnostics button and get a full report of what'
 When you first run the app:
 
 1. **Let it find your repos automatically**
-   - Click "🔍 Auto Detect" 
+   - Click "🔍 Auto Detect"
    - Pick the right paths from the dropdowns (if it found multiple)
    - Hit OK
 
 2. **Or set them up manually**
    - Click "⚙ Settings"
-   - Browse to where you cloned each repository
+   - Browse to where you cloned PKHeX and EventsGallery
+   - For PoGoEncTool: Either browse to an existing location or just specify where you want it cloned
+   - Make sure "Automatically clone, update, and build PoGoEncTool" is checked (it is by default!)
    - Save your settings
 
 3. **Run your first update**
    - Click "Update Now"
+   - The app will auto-clone PoGoEncTool if needed (this takes 1-2 minutes the first time)
    - Watch the pretty progress bars
    - Check the log to see all the files being processed
 
@@ -138,8 +150,17 @@ A: The tool is designed for PKHeX-ALL-IN-ONE, but the legality files work with a
 **Q: How often should I update?**  
 A: Events don't change that often. Daily updates are probably overkill, but weekly keeps you current.
 
-**Q: Is this safe?**  
+**Q: Is this safe?**
 A: Absolutely! It only touches the legality data files, never your save files or Pokemon data.
+
+**Q: Do I need to manually clone PoGoEncTool anymore?**
+A: Nope! As of v2.0.3, the app automatically clones, updates, and builds PoGoEncTool from the official repository. Just make sure you have the .NET SDK installed and the "Automatically clone, update, and build PoGoEncTool" checkbox is enabled in settings.
+
+**Q: What if I have my own fork of PoGoEncTool?**
+A: You can disable auto-management in Settings by unchecking "Automatically clone, update, and build PoGoEncTool". Then the app will use your existing fork instead.
+
+**Q: Why do I need the .NET SDK now?**
+A: The SDK is only needed for auto-building PoGoEncTool. If you disable auto-management and build it yourself, you don't need the SDK.
 
 ## For Developers
 
@@ -150,10 +171,11 @@ Want to contribute? Awesome! Here's what you need:
 - A good dark theme (just kidding... but not really)
 
 The code's pretty straightforward:
-- `MainForm` - The UI and coordination
-- `MGDBPickler` & `PGETPickler` - The file processors
-- `RepoUpdater` - Git operations
-- `AppLogManager` - Fancy logging system
+- `Forms/MainForm` - The UI and coordination
+- `Core/MGDBPickler` & `Core/PGETPickler` - The file processors
+- `Core/RepoUpdater` - Git operations (clone, update, build)
+- `Core/ProgramSettings` - Settings management
+- `Managers/` - Logging, settings, and backup management
 
 Feel free to open issues, submit PRs, or just say hi!
 
@@ -173,9 +195,21 @@ GPL v3 - Which basically means: use it, share it, improve it, but keep it open s
 
 ## What's New?
 
-### v2.0.2 (Latest)
+### v2.0.3 (Latest)
+- **🤖 Automatic PoGoEncTool Management** - No more manual cloning or building!
+  - Auto-clones official PoGoEncTool repository if missing
+  - Auto-updates to latest commits from official repo
+  - Auto-builds with dotnet CLI when updates detected
+  - Smart rebuild skip when executable is current
+  - Shows commit hash and message after updates
+- Added "Automatically clone, update, and build PoGoEncTool" setting (enabled by default)
+- Improved UX with better status indicators and progress messages
+- Better error messages with helpful hints (e.g., .NET SDK download link)
+- Fixed all 19 compiler warnings for cleaner builds
+
+### v2.0.2
 - Reorganized files into new "Core" folder
-- Fetch data directly from PGET directly to ensure data.json is always up to date.
+- Fetch data directly from PGET to ensure data.json is always up to date
 - Remove unused methods
 
 ### v2.0.1
