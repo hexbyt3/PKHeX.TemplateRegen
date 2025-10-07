@@ -1,3 +1,6 @@
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/hexbyt3/Pkhex.templateregen/total?color=violet)
+
+
 # PKHeX Template Regenerator
 
 Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by automatically pulling the latest data from EventsGallery and PoGoEncTool. No more manual copying or wondering if you have the latest events!
