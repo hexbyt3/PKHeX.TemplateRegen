@@ -87,6 +87,7 @@ public static class ProfileManager
             return Directory.GetFiles(ProfilesDirectory, "*.json")
                            .Select(Path.GetFileNameWithoutExtension)
                            .Where(name => !string.IsNullOrEmpty(name))
+                           .Select(name => name!)
                            .ToList();
         }
         catch

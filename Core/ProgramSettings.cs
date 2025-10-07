@@ -13,6 +13,8 @@ public class ProgramSettings
     public string RepoNameEvGal { get; set; } = "EventsGallery"; // relative if using RepoFolder
     public string RepoNamePGET { get; set; } = "PoGoEncTool"; // relative if using RepoFolder
 
+    // Auto-management options
+    public bool AutoManagePGETRepo { get; set; } = true; // Automatically clone, update, and build PoGoEncTool
 
     // Logic to get full paths
     public string PathPKHeX => GetRepoPath(RepoPKHeXLegality);

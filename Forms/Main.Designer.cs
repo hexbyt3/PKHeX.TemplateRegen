@@ -4,11 +4,13 @@ using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
 using Timer = System.Windows.Forms.Timer;
 
+#nullable enable
+
 namespace PKHeX.TemplateRegen.Forms;
 
 partial class MainForm
 {
-    private System.ComponentModel.IContainer components = null;
+    private System.ComponentModel.IContainer? components = null;
 
     #region Windows Form Designer generated code
 
@@ -193,21 +195,21 @@ partial class MainForm
 
     #endregion
 
-    private BackgroundWorker _updateWorker;
-    private Timer _statusTimer;
+    private BackgroundWorker _updateWorker = null!;
+    private Timer _statusTimer = null!;
     private NotifyIcon? _trayIcon;
-    private RichTextBox _logTextBox;
-    private ProgressBar _progressBar;
-    private Label _statusLabel;
-    private Button _updateButton;
-    private Button _settingsButton;
-    private Button _autoDetectButton;
-    private Panel _infoPanel;
-    private Label _pkHexPathLabel;
-    private Label _evGalPathLabel;
-    private Label _pgetPathLabel;
-    private CheckBox _autoUpdateCheckBox;
-    private NumericUpDown _autoUpdateInterval;
-    private Label _lastUpdateLabel;
-    private TableLayoutPanel _mainLayout;
+    private RichTextBox _logTextBox = null!;
+    private ProgressBar _progressBar = null!;
+    private Label _statusLabel = null!;
+    private Button _updateButton = null!;
+    private Button _settingsButton = null!;
+    private Button _autoDetectButton = null!;
+    private Panel _infoPanel = null!;
+    private Label _pkHexPathLabel = null!;
+    private Label _evGalPathLabel = null!;
+    private Label _pgetPathLabel = null!;
+    private CheckBox _autoUpdateCheckBox = null!;
+    private NumericUpDown _autoUpdateInterval = null!;
+    private Label _lastUpdateLabel = null!;
+    private TableLayoutPanel _mainLayout = null!;
 }

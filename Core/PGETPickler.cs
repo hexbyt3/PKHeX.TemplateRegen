@@ -2,59 +2,131 @@ using System.Diagnostics;
 
 namespace PKHeX.TemplateRegen;
 
-public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
+public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool AutoManage = true)
 {
     private const string DataJsonUrl = "https://raw.githubusercontent.com/projectpokemon/PoGoEncTool/refs/heads/main/Resources/data.json";
+    private const string PoGoEncToolRepoUrl = "https://github.com/projectpokemon/PoGoEncTool";
+    private const string RepoBranch = "main";
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromMinutes(2) };
 
     public async Task UpdateAsync()
     {
         AppLogManager.Log("Starting PoGo Enc Tool update...");
 
-        var exe = PathRepoPGET;
-        if (!File.Exists(exe) || !exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-        {
-            var searchPaths = new[]
-            {
-                Path.Combine(PathRepoPGET, "PoGoEncTool.WinForms", "bin", "Release", "net9.0-windows"),
-                Path.Combine(PathRepoPGET, "PoGoEncTool.WinForms", "bin", "Debug", "net9.0-windows"),
-                Path.Combine(PathRepoPGET, "PoGoEncTool.WinForms", "bin", "Release", "net8.0-windows"),
-                Path.Combine(PathRepoPGET, "PoGoEncTool.WinForms", "bin", "Debug", "net8.0-windows"),
-                Path.Combine(PathRepoPGET, "bin", "Release"),
-                Path.Combine(PathRepoPGET, "bin", "Debug"),
-                PathRepoPGET
-            };
+        Core.RepoUpdateResult? repoResult = null;
+        bool needsRebuild = false;
 
-            exe = null;
-            foreach (var searchPath in searchPaths.Where(Directory.Exists))
+        // Step 1: Auto-manage repository (clone/update) if enabled
+        if (AutoManage)
+        {
+            AppLogManager.Log("Auto-management enabled: Checking PoGoEncTool repository...");
+            AppLogManager.Log("This may take a moment on first run or when updates are available...");
+
+            repoResult = Core.RepoUpdater.CloneOrUpdateRepo(
+                "PoGoEncTool",
+                PoGoEncToolRepoUrl,
+                PathRepoPGET,
+                RepoBranch
+            );
+
+            if (!repoResult.Success)
             {
-                exe = Directory.EnumerateFiles(searchPath, "*.exe", SearchOption.TopDirectoryOnly)
-                              .FirstOrDefault(z => z.Contains("WinForms") || z.Contains("PoGo"));
-                if (exe != null)
+                AppLogManager.LogError("Failed to clone or update PoGoEncTool repository");
+                AppLogManager.LogError("Please check your internet connection and try again");
+                if (!string.IsNullOrEmpty(repoResult.ErrorMessage))
+                    AppLogManager.LogError($"Error details: {repoResult.ErrorMessage}");
+                return;
+            }
+
+            if (repoResult.WasUpdated)
+            {
+                AppLogManager.Log($"Repository updated to commit {repoResult.CommitHash?[..7]}");
+                if (!string.IsNullOrEmpty(repoResult.CommitMessage))
+                    AppLogManager.Log($"Latest commit: {repoResult.CommitMessage}");
+                needsRebuild = true;
+            }
+            else
+            {
+                AppLogManager.Log($"Repository already up to date (commit {repoResult.CommitHash?[..7]})");
+            }
+        }
+        else
+        {
+            AppLogManager.Log("Auto-management disabled: Using existing PoGoEncTool repository");
+        }
+
+        // Step 2: Find or build the executable
+        var exe = FindExecutable(PathRepoPGET);
+
+        // Check if we need to rebuild
+        if (AutoManage)
+        {
+            if (exe == null)
+            {
+                AppLogManager.Log("Executable not found, building PoGoEncTool...");
+                needsRebuild = true;
+            }
+            else if (!needsRebuild)
+            {
+                // Check if exe is older than last commit
+                var exeLastModified = File.GetLastWriteTimeUtc(exe);
+                var commitTime = GetLastCommitTime(PathRepoPGET);
+
+                if (commitTime.HasValue && exeLastModified < commitTime.Value)
                 {
-                    AppLogManager.LogDebug($"Found exe in: {searchPath}");
-                    break;
+                    AppLogManager.Log("Executable is older than latest commit, rebuilding...");
+                    needsRebuild = true;
+                }
+                else
+                {
+                    AppLogManager.Log("Using existing executable (up to date)");
                 }
             }
 
-            if (exe == null)
+            if (needsRebuild)
             {
-                AppLogManager.LogWarning("Exe not found in common locations, searching all subdirectories...");
-                exe = Directory.EnumerateFiles(PathRepoPGET, "*.exe", SearchOption.AllDirectories)
-                              .Where(f => f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                              .FirstOrDefault(z => z.Contains("WinForms") || z.Contains("PoGoEncTool"));
-            }
+                AppLogManager.Log("Building PoGoEncTool (this may take 10-30 seconds)...");
+                var buildSuccess = Core.RepoUpdater.BuildProject("PoGoEncTool", PathRepoPGET);
 
-            if (exe is null)
-            {
-                AppLogManager.LogError("PGET executable not found");
-                AppLogManager.LogError("Please ensure PoGoEncTool is built. Run 'dotnet build' in the repository folder.");
-                return;
+                if (!buildSuccess)
+                {
+                    AppLogManager.LogError("Failed to build PoGoEncTool");
+                    AppLogManager.LogError("Please ensure .NET SDK is installed (.NET 8.0 or later required)");
+                    AppLogManager.LogError("Download from: https://dotnet.microsoft.com/download");
+                    AppLogManager.LogError("");
+                    AppLogManager.LogError("If you're using a custom build, you can disable auto-management in settings");
+                    return;
+                }
+
+                // Re-find the executable after build
+                exe = FindExecutable(PathRepoPGET);
             }
         }
 
-        AppLogManager.Log($"Found PGET executable: {Path.GetFileName(exe)}");
+        // Step 3: Verify executable exists
+        if (exe == null)
+        {
+            exe = FindExecutable(PathRepoPGET);
+        }
 
+        if (exe == null)
+        {
+            AppLogManager.LogError("PGET executable not found");
+            if (AutoManage)
+            {
+                AppLogManager.LogError("The build completed but the executable could not be located");
+                AppLogManager.LogError("This is unexpected. Please report this issue.");
+            }
+            else
+            {
+                AppLogManager.LogError("Please build PoGoEncTool manually or enable auto-management in settings");
+            }
+            return;
+        }
+
+        AppLogManager.Log($"Using executable: {Path.GetFileName(exe)}");
+
+        // Step 4: Download and update data.json
         AppLogManager.Log("Downloading latest data.json from GitHub...");
         string jsonContent;
         try
@@ -251,5 +323,64 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET)
     public void Update()
     {
         UpdateAsync().GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Finds the PoGoEncTool executable in the repository, prioritizing Release builds.
+    /// </summary>
+    private static string? FindExecutable(string repoPath)
+    {
+        // Priority search paths - prefer Release over Debug, newer .NET versions first
+        var searchPaths = new[]
+        {
+            Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Release", "net9.0-windows"),
+            Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Release", "net8.0-windows"),
+            Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Debug", "net9.0-windows"),
+            Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Debug", "net8.0-windows"),
+            Path.Combine(repoPath, "bin", "Release"),
+            Path.Combine(repoPath, "bin", "Debug"),
+            repoPath
+        };
+
+        // Search in priority order
+        foreach (var searchPath in searchPaths.Where(Directory.Exists))
+        {
+            var exe = Directory.EnumerateFiles(searchPath, "*.exe", SearchOption.TopDirectoryOnly)
+                              .FirstOrDefault(z => z.Contains("WinForms", StringComparison.OrdinalIgnoreCase) ||
+                                                 z.Contains("PoGoEncTool", StringComparison.OrdinalIgnoreCase));
+            if (exe != null)
+            {
+                AppLogManager.LogDebug($"Found executable in: {searchPath}");
+                return exe;
+            }
+        }
+
+        // Fallback: deep search in repo directory
+        AppLogManager.LogDebug("Searching all subdirectories for executable...");
+        return Directory.EnumerateFiles(repoPath, "*.exe", SearchOption.AllDirectories)
+                       .Where(f => !f.Contains("backup", StringComparison.OrdinalIgnoreCase))
+                       .FirstOrDefault(z => z.Contains("WinForms", StringComparison.OrdinalIgnoreCase) ||
+                                          z.Contains("PoGoEncTool", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Gets the timestamp of the last commit in the repository.
+    /// </summary>
+    private static DateTime? GetLastCommitTime(string repoPath)
+    {
+        try
+        {
+            if (!LibGit2Sharp.Repository.IsValid(repoPath))
+                return null;
+
+            using var repo = new LibGit2Sharp.Repository(repoPath);
+            var lastCommit = repo.Head.Tip;
+            return lastCommit?.Author.When.UtcDateTime;
+        }
+        catch (Exception ex)
+        {
+            AppLogManager.LogDebug($"Could not get last commit time: {ex.Message}");
+            return null;
+        }
     }
 }

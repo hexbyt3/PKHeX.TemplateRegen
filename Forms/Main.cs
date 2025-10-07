@@ -177,7 +177,7 @@ public partial class MainForm : Form
             mgdb.Update();
 
             _updateWorker.ReportProgress(70, "Processing PoGo Enc Tool...");
-            var pget = new PGETPickler(_settings.PathPKHeX, _settings.PathRepoPGET);
+            var pget = new PGETPickler(_settings.PathPKHeX, _settings.PathRepoPGET, _settings.AutoManagePGETRepo);
             pget.Update();
 
             _updateWorker.ReportProgress(100, "Update completed!");
@@ -297,15 +297,32 @@ public partial class MainForm : Form
             ? $"✓ {_settings.PathRepoEvGal}"
             : $"✗ {_settings.PathRepoEvGal} (Not Found)";
 
-        _pgetPathLabel.Text = Directory.Exists(_settings.PathRepoPGET)
-            ? $"✓ {_settings.PathRepoPGET}"
-            : $"✗ {_settings.PathRepoPGET} (Not Found)";
+        // PoGoEncTool path display depends on auto-management setting
+        if (_settings.AutoManagePGETRepo)
+        {
+            if (Directory.Exists(_settings.PathRepoPGET))
+            {
+                _pgetPathLabel.Text = $"✓ {_settings.PathRepoPGET} (Auto-managed)";
+                _pgetPathLabel.ForeColor = Color.LightGreen;
+            }
+            else
+            {
+                _pgetPathLabel.Text = $"⚙ {_settings.PathRepoPGET} (Will auto-clone on first update)";
+                _pgetPathLabel.ForeColor = Color.LightBlue;
+            }
+        }
+        else
+        {
+            _pgetPathLabel.Text = Directory.Exists(_settings.PathRepoPGET)
+                ? $"✓ {_settings.PathRepoPGET}"
+                : $"✗ {_settings.PathRepoPGET} (Not Found)";
+            _pgetPathLabel.ForeColor = Directory.Exists(_settings.PathRepoPGET)
+                ? Color.LightGreen : Color.LightCoral;
+        }
 
         _pkHexPathLabel.ForeColor = Directory.Exists(_settings.PathPKHeX)
             ? Color.LightGreen : Color.LightCoral;
         _evGalPathLabel.ForeColor = Directory.Exists(_settings.PathRepoEvGal)
-            ? Color.LightGreen : Color.LightCoral;
-        _pgetPathLabel.ForeColor = Directory.Exists(_settings.PathRepoPGET)
             ? Color.LightGreen : Color.LightCoral;
     }
 
@@ -328,9 +345,16 @@ public partial class MainForm : Form
 
     private bool ValidatePaths()
     {
-        return Directory.Exists(_settings.PathPKHeX) &&
-               Directory.Exists(_settings.PathRepoEvGal) &&
-               Directory.Exists(_settings.PathRepoPGET);
+        // PKHeX and EventsGallery paths must exist
+        if (!Directory.Exists(_settings.PathPKHeX) || !Directory.Exists(_settings.PathRepoEvGal))
+            return false;
+
+        // PoGoEncTool path only needs to exist if auto-management is disabled
+        // (when enabled, we'll clone it automatically)
+        if (!_settings.AutoManagePGETRepo && !Directory.Exists(_settings.PathRepoPGET))
+            return false;
+
+        return true;
     }
 
     private void OnAutoUpdateToggled(object? sender, EventArgs e)

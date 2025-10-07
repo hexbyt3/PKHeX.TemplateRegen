@@ -3,21 +3,22 @@ namespace PKHeX.TemplateRegen;
 public class SettingsDialog : Form
 {
     private readonly ProgramSettings _settings;
-    private TextBox _repoFolderTextBox;
-    private TextBox _pkHexPathTextBox;
-    private TextBox _evGalPathTextBox;
-    private TextBox _pgetPathTextBox;
-    private Button _browsePkHexButton;
-    private Button _browseEvGalButton;
-    private Button _browsePgetButton;
-    private Button _browseRepoFolderButton;
-    private Button _saveButton;
-    private Button _cancelButton;
-    private Button _exportButton;
-    private Button _importButton;
-    private ComboBox _profileComboBox;
-    private Button _saveProfileButton;
-    private Button _deleteProfileButton;
+    private TextBox _repoFolderTextBox = null!;
+    private TextBox _pkHexPathTextBox = null!;
+    private TextBox _evGalPathTextBox = null!;
+    private TextBox _pgetPathTextBox = null!;
+    private CheckBox _autoManagePgetCheckBox = null!;
+    private Button _browsePkHexButton = null!;
+    private Button _browseEvGalButton = null!;
+    private Button _browsePgetButton = null!;
+    private Button _browseRepoFolderButton = null!;
+    private Button _saveButton = null!;
+    private Button _cancelButton = null!;
+    private Button _exportButton = null!;
+    private Button _importButton = null!;
+    private ComboBox _profileComboBox = null!;
+    private Button _saveProfileButton = null!;
+    private Button _deleteProfileButton = null!;
 
     public SettingsDialog(ProgramSettings settings)
     {
@@ -110,7 +111,7 @@ public class SettingsDialog : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
-            RowCount = 5,
+            RowCount = 6,
             Padding = new Padding(10)
         };
         settingsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
@@ -155,6 +156,18 @@ public class SettingsDialog : Form
         settingsLayout.Controls.Add(_pgetPathTextBox, 1, 4);
         _browsePgetButton = new Button { Text = "Browse", Dock = DockStyle.Fill };
         settingsLayout.Controls.Add(_browsePgetButton, 2, 4);
+
+        // Auto-manage PGET checkbox
+        _autoManagePgetCheckBox = new CheckBox
+        {
+            Text = "Automatically clone, update, and build PoGoEncTool",
+            Dock = DockStyle.Fill,
+            Checked = true,
+            AutoSize = true,
+            Margin = new Padding(0, 10, 0, 0)
+        };
+        settingsLayout.Controls.Add(_autoManagePgetCheckBox, 1, 5);
+        settingsLayout.SetColumnSpan(_autoManagePgetCheckBox, 2);
 
         settingsGroup.Controls.Add(settingsLayout);
 
@@ -232,6 +245,10 @@ public class SettingsDialog : Form
                 control.BackColor = darkControl;
                 control.ForeColor = lightText;
             }
+            else if (control is CheckBox)
+            {
+                control.ForeColor = lightText;
+            }
             else if (control is GroupBox || control is Panel || control is TableLayoutPanel || control is FlowLayoutPanel)
             {
                 control.BackColor = darkBg;
@@ -253,6 +270,7 @@ public class SettingsDialog : Form
         _pkHexPathTextBox.Text = _settings.RepoPKHeXLegality;
         _evGalPathTextBox.Text = _settings.RepoNameEvGal;
         _pgetPathTextBox.Text = _settings.RepoNamePGET;
+        _autoManagePgetCheckBox.Checked = _settings.AutoManagePGETRepo;
     }
 
     private void LoadProfiles()
@@ -292,6 +310,7 @@ public class SettingsDialog : Form
         _settings.RepoPKHeXLegality = _pkHexPathTextBox.Text;
         _settings.RepoNameEvGal = _evGalPathTextBox.Text;
         _settings.RepoNamePGET = _pgetPathTextBox.Text;
+        _settings.AutoManagePGETRepo = _autoManagePgetCheckBox.Checked;
 
         // Validate paths
         var errors = new List<string>();

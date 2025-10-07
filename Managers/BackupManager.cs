@@ -82,6 +82,7 @@ public static class BackupManager
                           .OrderByDescending(d => Directory.GetCreationTime(d))
                           .Select(Path.GetFileName)
                           .Where(name => !string.IsNullOrEmpty(name))
+                          .Select(name => name!)
                           .ToList();
         }
         catch
