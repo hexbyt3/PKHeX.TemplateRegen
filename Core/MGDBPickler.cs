@@ -40,7 +40,7 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath)
             ["Gen 7 (3DS)"] = [Path.Combine(released, "Gen 7", "3DS", "Wondercards"), "wc7", "wc7full"],
             ["Gen 7 (Switch)"] = [Path.Combine(released, "Gen 7", "Switch", "Wondercards"), "wb7full"],
             ["Gen 8"] = [Path.Combine(released, "Gen 8"), "wc8", "wb8", "wa8"],
-            ["Gen 9"] = [Path.Combine(released, "Gen 9"), "wc9"]
+            ["Gen 9"] = [Path.Combine(released, "Gen 9"), "wc9", "wa9"]
         };
 
         var totalGens = generations.Count;
