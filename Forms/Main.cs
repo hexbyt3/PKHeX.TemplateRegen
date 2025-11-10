@@ -293,9 +293,17 @@ public partial class MainForm : Form
             ? $"✓ {_settings.PathPKHeX}"
             : $"✗ {_settings.PathPKHeX} (Not Found)";
 
-        _evGalPathLabel.Text = Directory.Exists(_settings.PathRepoEvGal)
-            ? $"✓ {_settings.PathRepoEvGal}"
-            : $"✗ {_settings.PathRepoEvGal} (Not Found)";
+        // EventsGallery is always auto-managed
+        if (Directory.Exists(_settings.PathRepoEvGal))
+        {
+            _evGalPathLabel.Text = $"✓ {_settings.PathRepoEvGal} (Auto-managed)";
+            _evGalPathLabel.ForeColor = Color.LightGreen;
+        }
+        else
+        {
+            _evGalPathLabel.Text = $"⚙ {_settings.PathRepoEvGal} (Will auto-clone on first update)";
+            _evGalPathLabel.ForeColor = Color.LightBlue;
+        }
 
         // PoGoEncTool path display depends on auto-management setting
         if (_settings.AutoManagePGETRepo)
@@ -322,8 +330,6 @@ public partial class MainForm : Form
 
         _pkHexPathLabel.ForeColor = Directory.Exists(_settings.PathPKHeX)
             ? Color.LightGreen : Color.LightCoral;
-        _evGalPathLabel.ForeColor = Directory.Exists(_settings.PathRepoEvGal)
-            ? Color.LightGreen : Color.LightCoral;
     }
 
     private void UpdateLastUpdateLabel()
@@ -345,8 +351,8 @@ public partial class MainForm : Form
 
     private bool ValidatePaths()
     {
-        // PKHeX and EventsGallery paths must exist
-        if (!Directory.Exists(_settings.PathPKHeX) || !Directory.Exists(_settings.PathRepoEvGal))
+        // Only PKHeX path must exist - EventsGallery and PoGoEncTool are auto-managed
+        if (!Directory.Exists(_settings.PathPKHeX))
             return false;
 
         // PoGoEncTool path only needs to exist if auto-management is disabled

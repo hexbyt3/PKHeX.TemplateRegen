@@ -6,7 +6,7 @@
 Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by automatically pulling the latest data from EventsGallery and PoGoEncTool. No more manual copying or wondering if you have the latest events!
 ![image](https://github.com/user-attachments/assets/d2f553c1-7308-4070-884d-34656f4b4073)
 
-![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.0.3-blue.svg)
+![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.1.0-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)
 
@@ -14,8 +14,8 @@ Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by
 
 If you're using PKHeX (and let's be honest, if you're here, you probably are), you know that keeping the legality data current can be a bit of a pain. This tool automates that whole process:
 
-1. **Pulls the latest event data** from the EventsGallery repository
-2. **Grabs encounter data** from PoGoEncTool  
+1. **Automatically clones and updates** the latest event data from the official EventsGallery repository
+2. **Automatically manages** PoGoEncTool (clones, updates, and builds)
 3. **Packages everything** into those .pkl files PKHeX needs
 4. **Puts them exactly where PKHeX expects them**
 
@@ -43,11 +43,12 @@ Because we've all been there - something updates and suddenly nothing works. Thi
 ### 🏥 **Built-in Diagnostics**
 Something not working? Hit the diagnostics button and get a full report of what's going on. Super helpful when asking for help!
 
-### 🤖 **Automatic PoGoEncTool Management** (NEW!)
-No need to manually clone or maintain PoGoEncTool anymore! The app now:
-- Automatically clones the official PoGoEncTool repository if missing
-- Updates to the latest commits from the official repo
-- Builds the executable automatically when updates are available
+### 🤖 **Automatic Repository Management**
+No need to manually clone or maintain EventsGallery or PoGoEncTool anymore! The app now:
+- **EventsGallery**: Automatically clones and updates from the official repository
+- **PoGoEncTool**: Automatically clones, updates, and builds from the official repository
+- Updates to the latest commits from the official repos automatically
+- Builds executables when needed (for PoGoEncTool)
 - Skips unnecessary rebuilds when everything's up-to-date
 - Shows commit hash and messages so you know exactly what version you're using
 
@@ -57,12 +58,12 @@ No need to manually clone or maintain PoGoEncTool anymore! The app now:
 
 - **Windows 10 or 11** (sorry Mac/Linux folks!)
 - **[.NET 9.0 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)** - For running the app
-- **[.NET SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** - Only needed if using auto-build for PoGoEncTool (recommended!)
-- **Git** - If you've cloned repos, you're good
-- The following repos cloned somewhere on your system:
-  - [PKHeX-ALL-IN-ONE](https://github.com/bdawg1989/PKHeX-ALL-IN-ONE)
-  - [EventsGallery](https://github.com/projectpokemon/EventsGallery)
-  - ~~[PoGoEncTool](https://github.com/projectpokemon/PoGoEncTool)~~ - **Optional!** The app auto-manages this now
+- **[.NET SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** - Only needed for auto-building PoGoEncTool (recommended!)
+- **Git** - Required for cloning and updating repositories
+- The following repo cloned somewhere on your system:
+  - [PKHeX-ALL-IN-ONE](https://github.com/bdawg1989/PKHeX-ALL-IN-ONE) or regular PKHeX
+  - ~~[EventsGallery](https://github.com/projectpokemon/EventsGallery)~~ - **Auto-managed!** The app handles this now
+  - ~~[PoGoEncTool](https://github.com/projectpokemon/PoGoEncTool)~~ - **Auto-managed!** The app handles this now
 
 ### Installation
 
@@ -75,21 +76,21 @@ No need to manually clone or maintain PoGoEncTool anymore! The app now:
 
 When you first run the app:
 
-1. **Let it find your repos automatically**
+1. **Let it find your PKHeX repo automatically**
    - Click "🔍 Auto Detect"
-   - Pick the right paths from the dropdowns (if it found multiple)
+   - Pick the right PKHeX path from the dropdowns (if it found multiple)
    - Hit OK
 
-2. **Or set them up manually**
+2. **Or set it up manually**
    - Click "⚙ Settings"
-   - Browse to where you cloned PKHeX and EventsGallery
-   - For PoGoEncTool: Either browse to an existing location or just specify where you want it cloned
+   - Browse to where you cloned PKHeX
+   - Optionally specify where you want EventsGallery and PoGoEncTool cloned (defaults to your repos folder)
    - Make sure "Automatically clone, update, and build PoGoEncTool" is checked (it is by default!)
    - Save your settings
 
 3. **Run your first update**
    - Click "Update Now"
-   - The app will auto-clone PoGoEncTool if needed (this takes 1-2 minutes the first time)
+   - The app will auto-clone EventsGallery and PoGoEncTool if needed (takes 2-3 minutes the first time)
    - Watch the pretty progress bars
    - Check the log to see all the files being processed
 
@@ -153,11 +154,11 @@ A: Events don't change that often. Daily updates are probably overkill, but week
 **Q: Is this safe?**
 A: Absolutely! It only touches the legality data files, never your save files or Pokemon data.
 
-**Q: Do I need to manually clone PoGoEncTool anymore?**
-A: Nope! As of v2.0.3, the app automatically clones, updates, and builds PoGoEncTool from the official repository. Just make sure you have the .NET SDK installed and the "Automatically clone, update, and build PoGoEncTool" checkbox is enabled in settings.
+**Q: Do I need to manually clone EventsGallery or PoGoEncTool anymore?**
+A: Nope! The app automatically clones and updates both from their official repositories. Just make sure you have Git installed, and for PoGoEncTool building, the .NET SDK is also required.
 
-**Q: What if I have my own fork of PoGoEncTool?**
-A: You can disable auto-management in Settings by unchecking "Automatically clone, update, and build PoGoEncTool". Then the app will use your existing fork instead.
+**Q: What if I have my own fork of EventsGallery or PoGoEncTool?**
+A: For PoGoEncTool, you can disable auto-management in Settings by unchecking "Automatically clone, update, and build PoGoEncTool". Then the app will use your existing fork instead. EventsGallery is always auto-managed from the official repository to ensure legality data stays current.
 
 **Q: Why do I need the .NET SDK now?**
 A: The SDK is only needed for auto-building PoGoEncTool. If you disable auto-management and build it yourself, you don't need the SDK.
@@ -195,7 +196,18 @@ GPL v3 - Which basically means: use it, share it, improve it, but keep it open s
 
 ## What's New?
 
-### v2.0.3 (Latest)
+### v2.1.0 (Latest)
+- **🤖 Automatic EventsGallery Management** - Zero maintenance required!
+  - Auto-clones official EventsGallery repository if missing
+  - Auto-updates to latest commits from official repo
+  - No more need to maintain your own fork
+  - Shows commit hash and message after updates
+- EventsGallery is now completely auto-managed alongside PoGoEncTool
+- Updated UI to show auto-managed status for both repositories
+- Simplified first-time setup - only PKHeX path required
+- Updated documentation to reflect auto-management changes
+
+### v2.0.3
 - **🤖 Automatic PoGoEncTool Management** - No more manual cloning or building!
   - Auto-clones official PoGoEncTool repository if missing
   - Auto-updates to latest commits from official repo

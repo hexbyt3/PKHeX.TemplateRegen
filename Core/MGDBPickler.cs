@@ -15,13 +15,36 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath)
     public void Update()
     {
         var repoPath = EventGalleryRepoPath;
+        const string EventsGalleryRepoUrl = "https://github.com/projectpokemon/EventsGallery";
 
         AppLogManager.Log("Starting Events Gallery update...");
+        AppLogManager.Log("Auto-management enabled: Checking EventsGallery repository...");
 
-        if (!RepoUpdater.UpdateRepo("EventsGallery", repoPath, "master"))
+        var repoResult = RepoUpdater.CloneOrUpdateRepo(
+            "EventsGallery",
+            EventsGalleryRepoUrl,
+            repoPath,
+            "master"
+        );
+
+        if (!repoResult.Success)
         {
-            AppLogManager.LogError("Failed to update Events Gallery repository");
+            AppLogManager.LogError("Failed to clone or update Events Gallery repository");
+            AppLogManager.LogError("Please check your internet connection and try again");
+            if (!string.IsNullOrEmpty(repoResult.ErrorMessage))
+                AppLogManager.LogError($"Error details: {repoResult.ErrorMessage}");
             return;
+        }
+
+        if (repoResult.WasUpdated)
+        {
+            AppLogManager.Log($"Repository updated to commit {repoResult.CommitHash?[..7]}");
+            if (!string.IsNullOrEmpty(repoResult.CommitMessage))
+                AppLogManager.Log($"Latest commit: {repoResult.CommitMessage}");
+        }
+        else
+        {
+            AppLogManager.Log($"Repository already up to date (commit {repoResult.CommitHash?[..7]})");
         }
 
         var released = Path.Combine(repoPath, "Released");
