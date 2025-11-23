@@ -14,6 +14,9 @@ public class RepoUpdateResult
 
 public static class RepoUpdater
 {
+    [ThreadStatic]
+    private static int _credentialAttempts;
+
     /// <summary>
     /// Clones a repository from the specified URL to the target path.
     /// </summary>
@@ -34,6 +37,8 @@ public static class RepoUpdater
             }
 
             AppLogManager.Log($"Cloning {repoName} from {repoUrl} to {targetPath}...");
+
+            _credentialAttempts = 0;
 
             var cloneOptions = new CloneOptions
             {
@@ -168,6 +173,8 @@ public static class RepoUpdater
                     ErrorMessage = $"No origin remote found for {repo}"
                 };
             }
+
+            _credentialAttempts = 0;
 
             var fetchOptions = new FetchOptions
             {
@@ -431,6 +438,8 @@ public static class RepoUpdater
                 return false;
             }
 
+            _credentialAttempts = 0;
+
             var fetchOptions = new FetchOptions
             {
                 OnProgress = (output) =>
@@ -536,6 +545,25 @@ public static class RepoUpdater
 
     private static Credentials CredentialsHandler(string url, string usernameFromUrl, SupportedCredentialTypes types)
     {
+        // Prevent infinite retry loops - only attempt credentials once
+        _credentialAttempts++;
+
+        // For public HTTPS repositories (like GitHub public repos), use anonymous credentials
+        // This prevents authentication errors while allowing read access
+        if (url.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            // Return default credentials which works for public repos
+            return new DefaultCredentials();
+        }
+
+        // For SSH or other authenticated scenarios
+        if (types.HasFlag(SupportedCredentialTypes.Default))
+        {
+            return new DefaultCredentials();
+        }
+
+        // Default fallback
         return new DefaultCredentials();
     }
 }

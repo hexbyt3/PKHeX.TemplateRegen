@@ -173,7 +173,7 @@ public partial class MainForm : Form
             _updateWorker.ReportProgress(30, "Updating repositories...");
 
             _updateWorker.ReportProgress(40, "Processing Events Gallery...");
-            var mgdb = new MGDBPickler(_settings.PathPKHeX, _settings.PathRepoEvGal);
+            var mgdb = new MGDBPickler(_settings.PathPKHeX, _settings.PathRepoEvGal, _settings.AutoManageEventsGalleryRepo);
             mgdb.Update();
 
             _updateWorker.ReportProgress(70, "Processing PoGo Enc Tool...");

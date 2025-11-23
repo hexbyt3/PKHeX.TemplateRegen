@@ -7,6 +7,7 @@ public class SettingsDialog : Form
     private TextBox _pkHexPathTextBox = null!;
     private TextBox _evGalPathTextBox = null!;
     private TextBox _pgetPathTextBox = null!;
+    private CheckBox _autoManageEvGalCheckBox = null!;
     private CheckBox _autoManagePgetCheckBox = null!;
     private Button _browsePkHexButton = null!;
     private Button _browseEvGalButton = null!;
@@ -111,7 +112,7 @@ public class SettingsDialog : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
-            RowCount = 6,
+            RowCount = 7,
             Padding = new Padding(10)
         };
         settingsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
@@ -150,12 +151,24 @@ public class SettingsDialog : Form
         _browseEvGalButton = new Button { Text = "Browse", Dock = DockStyle.Fill };
         settingsLayout.Controls.Add(_browseEvGalButton, 2, 3);
 
+        // Auto-manage EventsGallery checkbox
+        _autoManageEvGalCheckBox = new CheckBox
+        {
+            Text = "Automatically clone and update EventsGallery",
+            Dock = DockStyle.Fill,
+            Checked = true,
+            AutoSize = true,
+            Margin = new Padding(0, 5, 0, 0)
+        };
+        settingsLayout.Controls.Add(_autoManageEvGalCheckBox, 1, 4);
+        settingsLayout.SetColumnSpan(_autoManageEvGalCheckBox, 2);
+
         // PoGo Enc Tool Path
-        settingsLayout.Controls.Add(new Label { Text = "PoGo Enc Tool Path:", Dock = DockStyle.Fill }, 0, 4);
+        settingsLayout.Controls.Add(new Label { Text = "PoGo Enc Tool Path:", Dock = DockStyle.Fill }, 0, 5);
         _pgetPathTextBox = new TextBox { Dock = DockStyle.Fill };
-        settingsLayout.Controls.Add(_pgetPathTextBox, 1, 4);
+        settingsLayout.Controls.Add(_pgetPathTextBox, 1, 5);
         _browsePgetButton = new Button { Text = "Browse", Dock = DockStyle.Fill };
-        settingsLayout.Controls.Add(_browsePgetButton, 2, 4);
+        settingsLayout.Controls.Add(_browsePgetButton, 2, 5);
 
         // Auto-manage PGET checkbox
         _autoManagePgetCheckBox = new CheckBox
@@ -164,9 +177,9 @@ public class SettingsDialog : Form
             Dock = DockStyle.Fill,
             Checked = true,
             AutoSize = true,
-            Margin = new Padding(0, 10, 0, 0)
+            Margin = new Padding(0, 5, 0, 0)
         };
-        settingsLayout.Controls.Add(_autoManagePgetCheckBox, 1, 5);
+        settingsLayout.Controls.Add(_autoManagePgetCheckBox, 1, 6);
         settingsLayout.SetColumnSpan(_autoManagePgetCheckBox, 2);
 
         settingsGroup.Controls.Add(settingsLayout);
@@ -270,6 +283,7 @@ public class SettingsDialog : Form
         _pkHexPathTextBox.Text = _settings.RepoPKHeXLegality;
         _evGalPathTextBox.Text = _settings.RepoNameEvGal;
         _pgetPathTextBox.Text = _settings.RepoNamePGET;
+        _autoManageEvGalCheckBox.Checked = _settings.AutoManageEventsGalleryRepo;
         _autoManagePgetCheckBox.Checked = _settings.AutoManagePGETRepo;
     }
 
@@ -310,6 +324,7 @@ public class SettingsDialog : Form
         _settings.RepoPKHeXLegality = _pkHexPathTextBox.Text;
         _settings.RepoNameEvGal = _evGalPathTextBox.Text;
         _settings.RepoNamePGET = _pgetPathTextBox.Text;
+        _settings.AutoManageEventsGalleryRepo = _autoManageEvGalCheckBox.Checked;
         _settings.AutoManagePGETRepo = _autoManagePgetCheckBox.Checked;
 
         // Validate paths
@@ -351,6 +366,8 @@ public class SettingsDialog : Form
                     _pkHexPathTextBox.Text = profile.RepoPKHeXLegality;
                     _evGalPathTextBox.Text = profile.RepoNameEvGal;
                     _pgetPathTextBox.Text = profile.RepoNamePGET;
+                    _autoManageEvGalCheckBox.Checked = profile.AutoManageEventsGalleryRepo;
+                    _autoManagePgetCheckBox.Checked = profile.AutoManagePGETRepo;
                 }
             }
         }
@@ -366,7 +383,9 @@ public class SettingsDialog : Form
                 RepoFolder = _repoFolderTextBox.Text,
                 RepoPKHeXLegality = _pkHexPathTextBox.Text,
                 RepoNameEvGal = _evGalPathTextBox.Text,
-                RepoNamePGET = _pgetPathTextBox.Text
+                RepoNamePGET = _pgetPathTextBox.Text,
+                AutoManageEventsGalleryRepo = _autoManageEvGalCheckBox.Checked,
+                AutoManagePGETRepo = _autoManagePgetCheckBox.Checked
             };
 
             ProfileManager.SaveProfile(dialog.InputText, profile);
@@ -418,6 +437,8 @@ public class SettingsDialog : Form
                     _pkHexPathTextBox.Text = imported.RepoPKHeXLegality;
                     _evGalPathTextBox.Text = imported.RepoNameEvGal;
                     _pgetPathTextBox.Text = imported.RepoNamePGET;
+                    _autoManageEvGalCheckBox.Checked = imported.AutoManageEventsGalleryRepo;
+                    _autoManagePgetCheckBox.Checked = imported.AutoManagePGETRepo;
 
                     MessageBox.Show("Settings imported successfully!", "Import",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -449,7 +470,9 @@ public class SettingsDialog : Form
                     RepoFolder = _repoFolderTextBox.Text,
                     RepoPKHeXLegality = _pkHexPathTextBox.Text,
                     RepoNameEvGal = _evGalPathTextBox.Text,
-                    RepoNamePGET = _pgetPathTextBox.Text
+                    RepoNamePGET = _pgetPathTextBox.Text,
+                    AutoManageEventsGalleryRepo = _autoManageEvGalCheckBox.Checked,
+                    AutoManagePGETRepo = _autoManagePgetCheckBox.Checked
                 };
 
                 SettingsManager.SaveSettingsToFile(exportSettings, dialog.FileName);

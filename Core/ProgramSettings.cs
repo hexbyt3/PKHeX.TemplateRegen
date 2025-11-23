@@ -14,6 +14,7 @@ public class ProgramSettings
     public string RepoNamePGET { get; set; } = "PoGoEncTool"; // relative if using RepoFolder
 
     // Auto-management options
+    public bool AutoManageEventsGalleryRepo { get; set; } = true; // Automatically clone and update EventsGallery
     public bool AutoManagePGETRepo { get; set; } = true; // Automatically clone, update, and build PoGoEncTool
 
     // Logic to get full paths
