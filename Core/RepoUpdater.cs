@@ -1,5 +1,6 @@
 using LibGit2Sharp;
 using System.Diagnostics;
+using System.Text;
 
 namespace PKHeX.TemplateRegen.Core;
 
@@ -565,5 +566,291 @@ public static class RepoUpdater
 
         // Default fallback
         return new DefaultCredentials();
+    }
+
+    /// <summary>
+    /// Clones or updates a repository using Git CLI.
+    /// This method is preferred for repositories with long paths on Windows,
+    /// as it respects the core.longpaths Git configuration.
+    /// </summary>
+    public static RepoUpdateResult CloneOrUpdateRepoViaCli(string repoName, string repoUrl, string targetPath, string branch = "main")
+    {
+        // First, ensure long paths are enabled in git config
+        EnsureLongPathsEnabled();
+
+        if (!Directory.Exists(targetPath) || !IsGitRepository(targetPath))
+        {
+            return CloneRepoViaCli(repoName, repoUrl, targetPath, branch);
+        }
+
+        return UpdateRepoViaCli(repoName, targetPath, branch);
+    }
+
+    /// <summary>
+    /// Ensures Git is configured to handle long paths on Windows.
+    /// </summary>
+    private static void EnsureLongPathsEnabled()
+    {
+        try
+        {
+            var result = RunGitCommand(".", "config --global core.longpaths true", timeoutMs: 5000);
+            if (!result.Success)
+            {
+                AppLogManager.LogWarning("Could not enable Git long paths. You may need to run: git config --global core.longpaths true");
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogManager.LogWarning($"Could not configure Git long paths: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Checks if a directory is a valid Git repository using Git CLI.
+    /// </summary>
+    private static bool IsGitRepository(string path)
+    {
+        if (!Directory.Exists(path))
+            return false;
+
+        var result = RunGitCommand(path, "rev-parse --is-inside-work-tree", timeoutMs: 5000);
+        return result.Success && result.Output.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Clones a repository using Git CLI.
+    /// </summary>
+    private static RepoUpdateResult CloneRepoViaCli(string repoName, string repoUrl, string targetPath, string branch)
+    {
+        try
+        {
+            if (Directory.Exists(targetPath))
+            {
+                if (IsGitRepository(targetPath))
+                {
+                    AppLogManager.Log($"{repoName} already exists at {targetPath}");
+                    return GetCurrentCommitInfo(repoName, targetPath, false);
+                }
+
+                AppLogManager.LogWarning($"Directory {targetPath} exists but is not a valid git repository");
+                return new RepoUpdateResult
+                {
+                    Success = false,
+                    WasUpdated = false,
+                    ErrorMessage = $"Directory exists but is not a valid git repository: {targetPath}"
+                };
+            }
+
+            var parentDir = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+            {
+                Directory.CreateDirectory(parentDir);
+                AppLogManager.Log($"Created directory: {parentDir}");
+            }
+
+            AppLogManager.Log($"Cloning {repoName} from {repoUrl} to {targetPath}...");
+            AppLogManager.Log("This may take a few minutes for large repositories...");
+
+            var cloneArgs = $"clone --branch {branch} --single-branch \"{repoUrl}\" \"{targetPath}\"";
+            var result = RunGitCommand(parentDir ?? ".", cloneArgs, timeoutMs: 600000); // 10 minute timeout for clone
+
+            if (!result.Success)
+            {
+                AppLogManager.LogError($"Failed to clone {repoName}: {result.Error}");
+                return new RepoUpdateResult
+                {
+                    Success = false,
+                    WasUpdated = false,
+                    ErrorMessage = result.Error
+                };
+            }
+
+            AppLogManager.Log($"Successfully cloned {repoName} to {targetPath}");
+            return GetCurrentCommitInfo(repoName, targetPath, true);
+        }
+        catch (Exception ex)
+        {
+            AppLogManager.LogError($"Error cloning {repoName}: {ex.Message}", ex);
+            return new RepoUpdateResult
+            {
+                Success = false,
+                WasUpdated = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Updates a repository using Git CLI (fetch + reset --hard).
+    /// </summary>
+    private static RepoUpdateResult UpdateRepoViaCli(string repoName, string targetPath, string branch)
+    {
+        try
+        {
+            if (!IsGitRepository(targetPath))
+            {
+                return new RepoUpdateResult
+                {
+                    Success = false,
+                    WasUpdated = false,
+                    ErrorMessage = $"Invalid {repoName} repository path: {targetPath}"
+                };
+            }
+
+            AppLogManager.Log($"Updating repository: {repoName}");
+
+            // Get current commit hash before update
+            var beforeResult = RunGitCommand(targetPath, "rev-parse HEAD", timeoutMs: 5000);
+            var beforeHash = beforeResult.Success ? beforeResult.Output.Trim() : null;
+
+            // Fetch latest changes
+            AppLogManager.Log($"Fetching latest changes for {repoName}...");
+            var fetchResult = RunGitCommand(targetPath, "fetch origin", timeoutMs: 300000); // 5 minute timeout
+
+            if (!fetchResult.Success)
+            {
+                AppLogManager.LogError($"Failed to fetch {repoName}: {fetchResult.Error}");
+                return new RepoUpdateResult
+                {
+                    Success = false,
+                    WasUpdated = false,
+                    ErrorMessage = fetchResult.Error
+                };
+            }
+
+            // Check if there are updates
+            var remoteRef = $"origin/{branch}";
+            var diffResult = RunGitCommand(targetPath, $"rev-list HEAD..{remoteRef} --count", timeoutMs: 10000);
+            var commitsBehind = 0;
+            if (diffResult.Success && int.TryParse(diffResult.Output.Trim(), out var behind))
+            {
+                commitsBehind = behind;
+            }
+
+            if (commitsBehind == 0)
+            {
+                AppLogManager.Log($"{repoName} is already up to date");
+                return GetCurrentCommitInfo(repoName, targetPath, false);
+            }
+
+            AppLogManager.Log($"{repoName} is {commitsBehind} commits behind {remoteRef}");
+            AppLogManager.Log($"Updating {repoName} to latest commit...");
+
+            // Reset to remote branch (handles long paths better than checkout)
+            var resetResult = RunGitCommand(targetPath, $"reset --hard {remoteRef}", timeoutMs: 300000);
+
+            if (!resetResult.Success)
+            {
+                AppLogManager.LogError($"Failed to update {repoName}: {resetResult.Error}");
+                return new RepoUpdateResult
+                {
+                    Success = false,
+                    WasUpdated = false,
+                    ErrorMessage = resetResult.Error
+                };
+            }
+
+            var commitInfo = GetCurrentCommitInfo(repoName, targetPath, true);
+            AppLogManager.Log($"Successfully updated {repoName} to commit {commitInfo.CommitHash?[..7]}");
+
+            return commitInfo;
+        }
+        catch (Exception ex)
+        {
+            AppLogManager.LogError($"Error updating {repoName}: {ex.Message}", ex);
+            return new RepoUpdateResult
+            {
+                Success = false,
+                WasUpdated = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Gets the current commit information from a repository.
+    /// </summary>
+    private static RepoUpdateResult GetCurrentCommitInfo(string repoName, string targetPath, bool wasUpdated)
+    {
+        try
+        {
+            var hashResult = RunGitCommand(targetPath, "rev-parse HEAD", timeoutMs: 5000);
+            var msgResult = RunGitCommand(targetPath, "log -1 --format=%s", timeoutMs: 5000);
+
+            return new RepoUpdateResult
+            {
+                Success = true,
+                WasUpdated = wasUpdated,
+                CommitHash = hashResult.Success ? hashResult.Output.Trim() : null,
+                CommitMessage = msgResult.Success ? msgResult.Output.Trim() : null
+            };
+        }
+        catch
+        {
+            return new RepoUpdateResult
+            {
+                Success = true,
+                WasUpdated = wasUpdated
+            };
+        }
+    }
+
+    /// <summary>
+    /// Runs a Git command and returns the result.
+    /// </summary>
+    private static (bool Success, string Output, string Error) RunGitCommand(string workingDirectory, string arguments, int timeoutMs = 120000)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = workingDirectory,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process == null)
+            {
+                return (false, "", "Failed to start git process");
+            }
+
+            var output = new StringBuilder();
+            var error = new StringBuilder();
+
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                    output.AppendLine(e.Data);
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                    error.AppendLine(e.Data);
+            };
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            if (!process.WaitForExit(timeoutMs))
+            {
+                try { process.Kill(); } catch { }
+                return (false, output.ToString(), "Git command timed out");
+            }
+
+            var success = process.ExitCode == 0;
+            return (success, output.ToString(), error.ToString());
+        }
+        catch (Exception ex)
+        {
+            return (false, "", ex.Message);
+        }
     }
 }

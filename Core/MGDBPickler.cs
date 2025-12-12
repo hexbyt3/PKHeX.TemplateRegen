@@ -23,7 +23,8 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
         {
             AppLogManager.Log("Auto-management enabled: Checking EventsGallery repository...");
 
-            var repoResult = RepoUpdater.CloneOrUpdateRepo(
+            // Use Git CLI for EventsGallery to handle long paths on Windows
+            var repoResult = RepoUpdater.CloneOrUpdateRepoViaCli(
                 "EventsGallery",
                 EventsGalleryRepoUrl,
                 repoPath,
