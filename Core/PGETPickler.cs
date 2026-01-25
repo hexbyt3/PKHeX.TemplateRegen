@@ -7,7 +7,7 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
     private const string DataJsonUrl = "https://raw.githubusercontent.com/projectpokemon/PoGoEncTool/refs/heads/main/Resources/data.json";
     private const string PoGoEncToolRepoUrl = "https://github.com/projectpokemon/PoGoEncTool";
     private const string RepoBranch = "main";
-    private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromMinutes(2) };
+    private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
 
     public async Task UpdateAsync()
     {
