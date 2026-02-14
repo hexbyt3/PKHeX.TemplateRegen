@@ -333,8 +333,10 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
         // Priority search paths - prefer Release over Debug, newer .NET versions first
         var searchPaths = new[]
         {
+            Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Release", "net10.0-windows"),
             Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Release", "net9.0-windows"),
             Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Release", "net8.0-windows"),
+            Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Debug", "net10.0-windows"),
             Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Debug", "net9.0-windows"),
             Path.Combine(repoPath, "PoGoEncTool.WinForms", "bin", "Debug", "net8.0-windows"),
             Path.Combine(repoPath, "bin", "Release"),

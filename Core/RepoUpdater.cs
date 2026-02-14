@@ -359,6 +359,11 @@ public static class RepoUpdater
                 WorkingDirectory = searchPath
             };
 
+            // Suppress .NET SDK first-run welcome message (written to stderr)
+            startInfo.Environment["DOTNET_NOLOGO"] = "1";
+            startInfo.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+            startInfo.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+
             using var process = Process.Start(startInfo);
             if (process == null)
             {
@@ -383,7 +388,7 @@ public static class RepoUpdater
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     errors.Add(e.Data);
-                    AppLogManager.LogDebug($"Build Error: {e.Data}");
+                    AppLogManager.LogDebug($"Build: {e.Data}");
                 }
             };
 
