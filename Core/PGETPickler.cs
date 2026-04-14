@@ -244,23 +244,12 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
         var searchDir = Path.GetDirectoryName(exe) ?? string.Empty;
         AppLogManager.Log($"Searching for .pkl files in: {searchDir}");
 
-        var additionalSearchDirs = new[] { PathRepoPGET, Path.Combine(PathRepoPGET, "Resources") };
-
         var files = new List<string>();
-
         if (Directory.Exists(searchDir))
         {
-            files.AddRange(Directory.EnumerateFiles(searchDir, "*.pkl", SearchOption.AllDirectories)
+            files.AddRange(Directory.EnumerateFiles(searchDir, "*.pkl", SearchOption.TopDirectoryOnly)
                                    .Where(f => !f.Contains("backup", StringComparison.OrdinalIgnoreCase)));
         }
-
-        foreach (var dir in additionalSearchDirs.Where(d => Directory.Exists(d) && d != searchDir))
-        {
-            files.AddRange(Directory.EnumerateFiles(dir, "*.pkl", SearchOption.AllDirectories)
-                                   .Where(f => !f.Contains("backup", StringComparison.OrdinalIgnoreCase)));
-        }
-
-        files = files.Distinct().ToList();
 
         AppLogManager.Log($"Found {files.Count} .pkl files total");
 
