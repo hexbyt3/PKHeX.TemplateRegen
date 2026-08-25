@@ -1,3 +1,5 @@
+﻿using System.Runtime.InteropServices;
+
 namespace PKHeX.TemplateRegen.Core;
 
 public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool AutoManage)
@@ -128,13 +130,142 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
 
         try
         {
-            BinFiles(path, ext, outfile);
+            if (ext == "pgf")
+                BinFilesPGF(path, ext, outfile);
+            else
+                BinFiles(path, ext, outfile);
         }
         catch (Exception ex)
         {
             AppLogManager.LogError($"Error processing {ext} files: {ex.Message}", ex);
         }
     }
+
+    // Specialized pickler: PKHeX reads a receivability footer (one byte per gift) appended
+    // after the concatenated cards. The constraints are scraped from the gift filename.
+    private void BinFilesPGF(string directory, string ext, string outfile)
+    {
+        AppLogManager.Log($"Processing {ext} files (with receivability metadata)...");
+
+        var files = Directory.EnumerateFiles(directory, $"*.{ext}", SearchOption.AllDirectories)
+                            .Where(f => f.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+        if (files.Count == 0)
+        {
+            AppLogManager.LogWarning($"No {ext} files found in {directory}");
+            File.WriteAllBytes(outfile, []);
+            return;
+        }
+
+        // Build in memory so a mid-way failure cannot leave a truncated .pkl on disk.
+        using var cards = new MemoryStream();
+        List<byte> receivability = new(files.Count);
+        var totalSize = 0L;
+
+        foreach (var file in files)
+        {
+            var targetFile = file;
+            var fileName = Path.GetFileName(file);
+
+            // Check for bad card replacements
+            if (BadCardSwap.TryGetValue(fileName, out var redirect))
+            {
+                var overridePath = Path.Combine(EventGalleryRepoPath, LegalityOverrideCards, redirect);
+                if (File.Exists(overridePath))
+                {
+                    targetFile = overridePath;
+                    AppLogManager.LogDebug($"Using override for {fileName}");
+                }
+                else
+                {
+                    AppLogManager.LogWarning($"Override file not found: {redirect}");
+                }
+            }
+
+            var bytes = File.ReadAllBytes(targetFile);
+            cards.Write(bytes);
+            totalSize += bytes.Length;
+
+            // Receivability is scraped from the original filename, not the override.
+            receivability.Add(GetReceivability5(Path.GetFileNameWithoutExtension(file)));
+        }
+
+        using (var stream = new FileStream(outfile, FileMode.Create))
+        {
+            cards.Position = 0;
+            cards.CopyTo(stream);
+            stream.Write(CollectionsMarshal.AsSpan(receivability));
+        }
+
+        var sizeMB = totalSize / (1024.0 * 1024.0);
+        AppLogManager.Log($"{ext}: Successfully processed {files.Count} files ({sizeMB:F2} MB) + {receivability.Count} receivability bytes");
+
+        var fileInfo = new FileInfo(outfile);
+        AppLogManager.LogDebug($"Created {Path.GetFileName(outfile)} - Size: {fileInfo.Length:N0} bytes");
+    }
+
+    private static byte GetReceivability5(string fileName)
+    {
+        // 0035 W - 잔타 Golurk (KOR).pgf
+        // Second word is receivability: BWB2W2 mapped to bitflags
+        // Last (*) is language.
+
+        // Get Receivability: second word in the filename
+        var parts = fileName.Split(' ');
+        if (parts.Length < 2)
+            throw new ArgumentException($"Invalid filename format: {fileName}");
+
+        var resultVersion = GetVersionFromTag(parts[1]);
+        var language = parts[^1];
+        if (language.Length != 5) // bad tag
+            language = parts[^2];
+        var resultLanguage = GetLanguageFromTag(language);
+
+        // Merge them together. Version first 4 bits, then language top 4 bits.
+        return (byte)((resultLanguage << 4) | resultVersion);
+    }
+
+    private static byte GetVersionFromTag(ReadOnlySpan<char> tag)
+    {
+        byte result = 0;
+        // peel off bitflags from the tag.
+
+        // W=0, B=1, W2=2, B2=3
+        if (tag.EndsWith("W2"))
+        {
+            result |= 1 << 2; // W2 flag
+            tag = tag[..^2];
+        }
+        if (tag.EndsWith("B2"))
+        {
+            result |= 1 << 3; // B2 flag
+            tag = tag[..^2];
+        }
+        if (tag.EndsWith("W"))
+        {
+            result |= 1 << 0; // W flag
+            tag = tag[..^1];
+        }
+        if (tag.EndsWith("B"))
+        {
+            result |= 1 << 1; // B flag
+            tag = tag[..^1];
+        }
+        return result;
+    }
+
+    private static byte GetLanguageFromTag(ReadOnlySpan<char> tag) => tag switch
+    {
+        "(JPN)" => 1, // Japanese
+        "(ENG)" => 2, // English (US/UK/AU)
+        "(FRE)" => 3, // French
+        "(ITA)" => 4, // Italian
+        "(GER)" => 5, // German
+        "(SPA)" => 7, // Spanish
+        "(KOR)" => 8, // Korean
+        _ => throw new ArgumentException($"Unknown language tag: {tag}"),
+    };
 
     private void BinFiles(string directory, string ext, string outfile)
     {
