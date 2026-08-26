@@ -6,6 +6,9 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
 {
     private const string LegalityOverrideCards = "PKHeX Legality";
 
+    // PGF.Size in PKHeX.Core. Kept local so the tool does not take a Core reference.
+    private const int PgfSize = 0xCC;
+
     private static readonly Dictionary<string, string> BadCardSwap = new()
     {
         {"1053 XYORAS - 데세르시티 Arceus (KOR).wc6",
@@ -147,8 +150,19 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
     {
         AppLogManager.Log($"Processing {ext} files (with receivability metadata)...");
 
-        var files = Directory.EnumerateFiles(directory, $"*.{ext}", SearchOption.AllDirectories)
-                            .Where(f => f.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+        // Gen 5 ships 63 distributions only as .wc5full -- the full wonder card,
+        // whose first PGF.Size bytes ARE the gift (see PKHeX WC5Full.cs, and
+        // MysteryGift.cs which already reads the extension). Globbing "*.pgf"
+        // alone dropped every one of them from pgf.pkl, so the bot rejected
+        // Pokemon from those distributions as "Unable to match an encounter" --
+        // Keldeo, Meloetta, Darkrai, Zoroark, Dialga/Palkia/Giratina among them.
+        // Gen 6 and 7 already pickle their "full" variants; Gen 5 has no
+        // wc5full.pkl, so the cards have to be folded into pgf.pkl instead.
+        // The filename convention is identical, so GetReceivability5 needs no change.
+        var files = Directory.EnumerateFiles(directory, "*.*", SearchOption.AllDirectories)
+                            .Where(f => f.EndsWith($".{ext}", StringComparison.OrdinalIgnoreCase)
+                                     || f.EndsWith(".wc5full", StringComparison.OrdinalIgnoreCase))
+                            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                             .ToList();
 
         if (files.Count == 0)
@@ -184,6 +198,15 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
             }
 
             var bytes = File.ReadAllBytes(targetFile);
+
+            // A .wc5full is the 720-byte presentation card; the gift itself is the
+            // leading PGF. PKHeX slices it the same way in WC5Full's constructor.
+            // Every entry written here must be exactly PGF-sized, because the
+            // reader walks the pickle in fixed-size strides and then expects one
+            // receivability byte per card in the footer.
+            if (bytes.Length > PgfSize)
+                bytes = bytes[..PgfSize];
+
             cards.Write(bytes);
             totalSize += bytes.Length;
 
