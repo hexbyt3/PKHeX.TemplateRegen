@@ -9,6 +9,9 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
     // PGF.Size in PKHeX.Core. Kept local so the tool does not take a Core reference.
     private const int PgfSize = 0xCC;
 
+    // WC5Full.Size in PKHeX.Core -- the full presentation card.
+    private const int Wc5FullSize = 0x2D0;
+
     private static readonly Dictionary<string, string> BadCardSwap = new()
     {
         {"1053 XYORAS - 데세르시티 Arceus (KOR).wc6",
@@ -200,18 +203,32 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
             var bytes = File.ReadAllBytes(targetFile);
 
             // A .wc5full is the 720-byte presentation card; the gift itself is the
-            // leading PGF. PKHeX slices it the same way in WC5Full's constructor.
-            // Every entry written here must be exactly PGF-sized, because the
-            // reader walks the pickle in fixed-size strides and then expects one
-            // receivability byte per card in the footer.
-            if (bytes.Length > PgfSize)
+            // leading PGF, exactly as WC5Full's constructor slices it. Every entry
+            // written here must be PGF-sized, because the reader walks the pickle in
+            // fixed-size strides and then expects one receivability byte per card in
+            // the footer.
+            //
+            // Take that card's restrictions from its own metadata rather than from
+            // the filename. WC5Full exposes RestrictVersion at Metadata[2] and
+            // RestrictLanguage at Metadata[^5], where Metadata starts at PGF.Size --
+            // real data, and the reason a .wc5full loaded straight from a folder
+            // resolves when a filename-scraped one does not.
+            if (bytes.Length >= Wc5FullSize)
+            {
+                var version = bytes[PgfSize + 2];
+                var language = bytes[Wc5FullSize - 5];
+                receivability.Add((byte)((language << 4) | (version & 0x0F)));
                 bytes = bytes[..PgfSize];
+            }
+            else
+            {
+                // Plain .pgf carries no metadata; the constraints live in the name.
+                // Scraped from the original filename, not the override.
+                receivability.Add(GetReceivability5(Path.GetFileNameWithoutExtension(file)));
+            }
 
             cards.Write(bytes);
             totalSize += bytes.Length;
-
-            // Receivability is scraped from the original filename, not the override.
-            receivability.Add(GetReceivability5(Path.GetFileNameWithoutExtension(file)));
         }
 
         using (var stream = new FileStream(outfile, FileMode.Create))
