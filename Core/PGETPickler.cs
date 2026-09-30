@@ -91,7 +91,7 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
                 if (!buildSuccess)
                 {
                     AppLogManager.LogError("Failed to build PoGoEncTool");
-                    AppLogManager.LogError("Please ensure .NET SDK is installed (.NET 8.0 or later required)");
+                    AppLogManager.LogError("PoGoEncTool targets .NET 10; please ensure the .NET 10 SDK is installed");
                     AppLogManager.LogError("Download from: https://dotnet.microsoft.com/download");
                     AppLogManager.LogError("");
                     AppLogManager.LogError("If you're using a custom build, you can disable auto-management in settings");
@@ -259,6 +259,9 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
             AppLogManager.LogDebug($"Found: {relativePath}");
         }
 
+        if (!IsLayoutCompatible(files))
+            return;
+
         int ctr = 0;
         var expectedFiles = new[] { "encounter_go_home.pkl", "encounter_go_lgpe.pkl" };
         var foundExpected = new HashSet<string>();
@@ -312,6 +315,37 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
     public void Update()
     {
         UpdateAsync().GetAwaiter().GetResult();
+    }
+
+    private bool IsLayoutCompatible(IEnumerable<string> files)
+    {
+        foreach (var file in files)
+        {
+            var areaFile = Path.GetFileName(file) switch
+            {
+                "encounter_go_home.pkl" => "EncounterArea8g.cs",
+                "encounter_go_lgpe.pkl" => "EncounterArea7g.cs",
+                _ => null,
+            };
+            if (areaFile is null)
+                continue;
+
+            var slotSize = Core.GoPickleLayout.GetExpectedSlotSize(PathPKHeXLegality, areaFile);
+            if (slotSize is null)
+            {
+                AppLogManager.LogWarning($"Could not read the GO slot size from PKHeX's {areaFile}; copying {Path.GetFileName(file)} unchecked");
+                continue;
+            }
+
+            var problem = Core.GoPickleLayout.Validate(File.ReadAllBytes(file), slotSize.Value);
+            if (problem is null)
+                continue;
+
+            AppLogManager.LogError($"{Path.GetFileName(file)} does not match PKHeX's {slotSize}-byte GO slots: {problem}");
+            AppLogManager.LogError("PoGoEncTool and this PKHeX use different pickle layouts. Update PKHeX's GO reader before installing these; nothing was copied.");
+            return false;
+        }
+        return true;
     }
 
     /// <summary>
