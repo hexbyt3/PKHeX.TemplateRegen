@@ -1,0 +1,54 @@
+name: Build and Release
+on:
+  push:
+    branches: [ main ]   # a release only ever comes from the default branch
+    paths:
+      - "PKHeX.TemplateRegen.csproj"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    if: github.ref_name == github.event.repository.default_branch   # manual runs too
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Read version
+        id: ver
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content PKHeX.TemplateRegen.csproj
+          $full = ($proj.Project.PropertyGroup | Where-Object { $_.AssemblyVersion } | Select-Object -First 1).AssemblyVersion
+          $parts = $full.Split('.')
+          $version = "$($parts[0]).$($parts[1]).$($parts[2])"
+          git fetch --tags
+          if (git tag -l "v$version") {
+            echo "::notice::v$version is already released; bump AssemblyVersion to publish a new one."
+            echo "release=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $prev = git describe --tags --abbrev=0 2>$null
+          $range = if ($prev) { "$prev..HEAD" } else { "HEAD" }
+          $changes = git log --no-merges --pretty=format:"- %s" $range
+          "## PKHeX Template Regenerator $version`n`n$($changes -join "`n")" | Out-File -Encoding utf8 notes.md
+          echo "release=true" >> $env:GITHUB_OUTPUT
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Setup .NET
+        if: steps.ver.outputs.release == 'true'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish
+        if: steps.ver.outputs.release == 'true'
+        run: dotnet publish PKHeX.TemplateRegen.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
+      - name: Create Release
+        if: steps.ver.outputs.release == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: "v${{ steps.ver.outputs.version }}"
+          target_commitish: ${{ github.sha }}
+          name: "${{ steps.ver.outputs.version }}"
+          body_path: notes.md
+          files: publish/PKHeX.TemplateRegen.exe
