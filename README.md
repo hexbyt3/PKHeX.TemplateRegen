@@ -7,7 +7,7 @@ Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by
 ![image](https://github.com/user-attachments/assets/d2f553c1-7308-4070-884d-34656f4b4073)
 
 ![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.1.0-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
+![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)
 
 ## What Does This Do?
@@ -57,8 +57,8 @@ No need to manually clone or maintain EventsGallery or PoGoEncTool anymore! The 
 ### What You'll Need
 
 - **Windows 10 or 11** (sorry Mac/Linux folks!)
-- **[.NET 9.0 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)** - For running the app
-- **[.NET SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** - Only needed for auto-building PoGoEncTool (recommended!)
+- Nothing else to run the app: the release exe carries its own .NET 10 runtime
+- **[.NET SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** - Only needed for auto-building PoGoEncTool (recommended!)
 - **Git** - Required for cloning and updating repositories
 - The following repo cloned somewhere on your system:
   - [PKHeX-ALL-IN-ONE](https://github.com/bdawg1989/PKHeX-ALL-IN-ONE) or regular PKHeX
@@ -168,7 +168,7 @@ A: The SDK is only needed for auto-building PoGoEncTool. If you disable auto-man
 Want to contribute? Awesome! Here's what you need:
 
 - Visual Studio 2022 or later
-- .NET 9.0 SDK
+- .NET 10.0 SDK
 - A good dark theme (just kidding... but not really)
 
 The code's pretty straightforward:
