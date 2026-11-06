@@ -6,7 +6,7 @@
 Hey there! 👋 This tool helps keep your PKHeX legality templates up-to-date by automatically pulling the latest data from EventsGallery and PoGoEncTool. No more manual copying or wondering if you have the latest events!
 ![image](https://github.com/user-attachments/assets/d2f553c1-7308-4070-884d-34656f4b4073)
 
-![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.1.0-blue.svg)
+![PKHeX Template Regenerator](https://img.shields.io/badge/version-2.2.1-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)
 
@@ -196,7 +196,10 @@ GPL v3 - Which basically means: use it, share it, improve it, but keep it open s
 
 ## What's New?
 
-### v2.1.0 (Latest)
+### v2.2.1 (Latest)
+- Regenerating no longer deletes cards PKHeX has that EventsGallery doesn't have yet. They stay in the file and the log lists them.
+
+### v2.1.0
 - **🤖 Automatic EventsGallery Management** - Zero maintenance required!
   - Auto-clones official EventsGallery repository if missing
   - Auto-updates to latest commits from official repo
