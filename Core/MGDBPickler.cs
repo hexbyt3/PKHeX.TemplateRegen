@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace PKHeX.TemplateRegen.Core;
 
@@ -11,6 +12,19 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
 
     // WC5Full.Size in PKHeX.Core -- the full presentation card.
     private const int Wc5FullSize = 0x2D0;
+
+    // Switch-era cards are fixed-size records with a little-endian u16 CardID at this offset.
+    // Sizes are WC8/WB8/WA8/WC9/WA9.Size in PKHeX.Core.
+    private const int CardIdOffset = 0x08;
+
+    private static readonly Dictionary<string, int> RecordSizes = new()
+    {
+        ["wc8"] = 0x2D0,
+        ["wb8"] = 0x2DC,
+        ["wa8"] = 0x2C8,
+        ["wc9"] = 0x2C8,
+        ["wa9"] = 0x2C8,
+    };
 
     private static readonly Dictionary<string, string> BadCardSwap = new()
     {
@@ -311,6 +325,9 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
     {
         AppLogManager.Log($"Processing {ext} files...");
 
+        // Read this before the file is cleared: see AppendCardsMissingFromGallery.
+        var previous = File.Exists(outfile) ? File.ReadAllBytes(outfile) : [];
+
         // Create/clear file
         File.WriteAllBytes(outfile, []);
 
@@ -330,6 +347,7 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
         var processed = 0;
         var skipped = 0;
         var totalSize = 0L;
+        HashSet<ushort> galleryCardIds = [];
 
         foreach (var file in files)
         {
@@ -355,6 +373,8 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
 
                 var bytes = File.ReadAllBytes(targetFile);
                 stream.Write(bytes);
+                if (bytes.Length >= CardIdOffset + sizeof(ushort))
+                    galleryCardIds.Add(BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(CardIdOffset)));
 
                 processed++;
                 totalSize += bytes.Length;
@@ -370,6 +390,7 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
             }
         }
 
+        AppendCardsMissingFromGallery(stream, ext, previous, galleryCardIds);
         stream.Flush();
 
         var sizeMB = totalSize / (1024.0 * 1024.0);
@@ -381,5 +402,32 @@ public class MGDBPickler(string PKHeXLegality, string EventGalleryRepoPath, bool
             var fileInfo = new FileInfo(outfile);
             AppLogManager.LogDebug($"Created {Path.GetFileName(outfile)} - Size: {fileInfo.Length:N0} bytes");
         }
+    }
+
+    // PKHeX's pickles can hold cards EventsGallery doesn't have yet: Kurt adds some by hand
+    // (16 Z-A Spewpa 1615 patterns on 2026-10-30, HOME Celebi 9036 on 2026-10-18). Rebuilding
+    // from the gallery alone deleted those, and every matching Pokemon then failed legality.
+    // A card ID the gallery has is always taken from the gallery, so corrections still land.
+    private static void AppendCardsMissingFromGallery(Stream stream, string ext, ReadOnlySpan<byte> previous, HashSet<ushort> galleryCardIds)
+    {
+        if (!RecordSizes.TryGetValue(ext, out var size) || previous.Length % size != 0)
+            return;
+
+        var kept = 0;
+        SortedSet<ushort> keptIds = [];
+        for (var offset = 0; offset < previous.Length; offset += size)
+        {
+            var card = previous.Slice(offset, size);
+            var id = BinaryPrimitives.ReadUInt16LittleEndian(card[CardIdOffset..]);
+            if (galleryCardIds.Contains(id))
+                continue;
+
+            stream.Write(card);
+            keptIds.Add(id);
+            kept++;
+        }
+
+        if (kept != 0)
+            AppLogManager.LogWarning($"{ext}: kept {kept} card(s) EventsGallery doesn't have: {string.Join(", ", keptIds)}");
     }
 }
