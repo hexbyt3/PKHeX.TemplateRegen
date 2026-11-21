@@ -28,7 +28,7 @@
     <AssemblyProduct>PKHeX Template Regenerator</AssemblyProduct>
     <AssemblyCopyright>Copyright © 2024</AssemblyCopyright>
     <AssemblyVersion>2.2.2.0</AssemblyVersion>
-    <FileVersion>2.2.1.0</FileVersion>
+    <FileVersion>2.2.2.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
