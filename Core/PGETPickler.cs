@@ -319,6 +319,14 @@ public class PGETPickler(string PathPKHeXLegality, string PathRepoPGET, bool Aut
 
     private bool IsLayoutCompatible(IEnumerable<string> files)
     {
+        var enumProblem = Core.GoEnumCheck.Compare(PathRepoPGET, PathPKHeXLegality);
+        if (enumProblem is not null)
+        {
+            AppLogManager.LogError($"GO enums differ between PoGoEncTool and PKHeX: {enumProblem}");
+            AppLogManager.LogError("The pickles store these as raw numbers, so PKHeX would misread them. Port PKHeX's GO enums before installing these; nothing was copied.");
+            return false;
+        }
+
         foreach (var file in files)
         {
             var areaFile = Path.GetFileName(file) switch
